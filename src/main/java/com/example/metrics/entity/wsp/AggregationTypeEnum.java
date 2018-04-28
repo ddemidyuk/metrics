@@ -1,4 +1,4 @@
-package com.example.metrics.entity;
+package com.example.metrics.entity.wsp;
 
 import java.util.HashMap;
 import java.util.Map;

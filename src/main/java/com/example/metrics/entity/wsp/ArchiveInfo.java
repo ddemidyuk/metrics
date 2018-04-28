@@ -1,4 +1,4 @@
-package com.example.metrics.entity;
+package com.example.metrics.entity.wsp;
 
 public class ArchiveInfo {
     private final Long offset;

@@ -1,6 +1,6 @@
 package com.example.metrics.srv;
 
-import com.example.metrics.entity.*;
+import com.example.metrics.entity.wsp.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -51,7 +51,7 @@ public class WspReaderImpl implements WspReader {
             long timeStamp = buf.getInt();
             if (timeStamp == 0) continue;
             double value = buf.getDouble();
-            if (value == 0.0) continue;
+            //if (value == 0.0) continue;
             Datapoint datapoint = new Datapoint(new Date(timeStamp * 1000), value);
             datapoints.addLast(datapoint);
         } while (buf.hasRemaining());
