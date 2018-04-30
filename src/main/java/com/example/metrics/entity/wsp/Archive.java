@@ -1,21 +1,23 @@
 package com.example.metrics.entity.wsp;
 
-import java.util.Deque;
+import java.util.TreeSet;
 
 public class Archive {
     private final ArchiveInfo archiveInfo;
-    private final Deque<Datapoint> datapoints;
-
-    public Archive(ArchiveInfo archiveInfo, Deque<Datapoint> datapoints) {
+    private final TreeSet<Datapoint> datapoints = new TreeSet<>();
+    public Archive(ArchiveInfo archiveInfo) {
         this.archiveInfo = archiveInfo;
-        this.datapoints = datapoints;
     }
 
     public ArchiveInfo getArchiveInfo() {
         return archiveInfo;
     }
 
-    public Deque<Datapoint> getDatapoints() {
+    public TreeSet<Datapoint> getDatapoints() {
         return datapoints;
+    }
+
+    public void addDatapoint(Datapoint datapoint){
+        datapoints.add(datapoint);
     }
 }
