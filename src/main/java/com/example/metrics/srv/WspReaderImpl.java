@@ -1,8 +1,6 @@
 package com.example.metrics.srv;
 
-import com.example.metrics.AppProperties;
 import com.example.metrics.entity.wsp.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -10,10 +8,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class WspReaderImpl implements WspReader {
@@ -21,22 +17,12 @@ public class WspReaderImpl implements WspReader {
     private static final int METADATA_SIZE_IN_BYTES = 16;
     private static final int ARCHIVE_INFO_SIZE_IN_BYTES = 12;
     private static final int DATAPOINT_SIZE_IN_BYTES = 12;
-    private static final String DATABASE_FILE_EXTENSION = ".wsp";
 
-    @Autowired
-    private AppProperties appProperties;
-
-    public List<Series> getSeriesListBySeriesIds(List<String> seriesIds) throws IOException {
-        return Files.walk(Paths.get(appProperties.getInputDataRootPath()))
-                .filter(path -> path.getFileName().toString().toLowerCase().endsWith(DATABASE_FILE_EXTENSION))
-                .map(this::getSeriesByWspFilePath)
-                .collect(Collectors.toList());
-    }
-
-    private Series getSeriesByWspFilePath(Path path) {
+    public Series getSeriesByWspFilePath(Path path, Filter filter) {
         Series series = null;
         try (ReadableByteChannel byteChannel = Files.newByteChannel(path)) {
             Header header = getHeader(byteChannel);
+            header.setArchiveInfos(filter.filterArchiveInfos(header.getArchiveInfos()));//todo
             List<Archive> archives = getArchives(byteChannel, header.getArchiveInfos());
             series = new Series(path.toString(), header, archives); //todo
         } catch (IOException e) {

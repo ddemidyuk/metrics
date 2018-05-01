@@ -2,7 +2,7 @@ package com.example.metrics;
 
 import com.example.metrics.entity.wsp.Datapoint;
 import com.example.metrics.entity.wsp.Series;
-import com.example.metrics.srv.WspReader;
+import com.example.metrics.srv.SeriesService;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,15 +21,18 @@ public class Run {
     private static final Path csvPath = Paths.get("C:\\TEMP\\metrics.csv");
 
     @Autowired
-    WspReader wspReader;
+    SeriesService seriesService;
 
     public  void start(String... args) throws IOException {
         String[] seriesIds = {"adserver-00\\cpu\\percent\\wait.wsp"};
+
+        List<Series> seriesList = seriesService.getSeriesListBySeriesIds();
         createMetricCsv(csvPath, seriesIds);
-        /*Series series = wspReader.getSeriesByWspFilePath(seriesIds[0]);
-        saveToCsv(csvPath, series.getArchives().get(0).getDatapoints());*/
-        List<Series> seriesList = wspReader.getSeriesListBySeriesIds(null);
         saveToCsv(csvPath, seriesList.get(0).getArchives().get(0).getDatapoints());
+        createMetricCsv(Paths.get("C:\\TEMP\\metrics1.csv"), seriesIds);
+        saveToCsv(Paths.get("C:\\TEMP\\metrics1.csv"), seriesList.get(1).getArchives().get(0).getDatapoints());
+        createMetricCsv(Paths.get("C:\\TEMP\\metrics2.csv"), seriesIds);
+        saveToCsv(Paths.get("C:\\TEMP\\metrics2.csv"), seriesList.get(2).getArchives().get(0).getDatapoints());
 
     }
 
