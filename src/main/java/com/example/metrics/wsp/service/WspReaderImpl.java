@@ -1,6 +1,6 @@
-package com.example.metrics.srv;
+package com.example.metrics.wsp.service;
 
-import com.example.metrics.entity.wsp.*;
+import com.example.metrics.wsp.entities.*;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -21,9 +21,8 @@ public class WspReaderImpl implements WspReader {
     public Series getSeriesByWspFilePath(Path path, Filter filter) {
         Series series = null;
         try (ReadableByteChannel byteChannel = Files.newByteChannel(path)) {
-            Header header = getHeader(byteChannel);
-            header.setArchiveInfos(filter.filterArchiveInfos(header.getArchiveInfos()));//todo
-            List<Archive> archives = getArchives(byteChannel, header.getArchiveInfos());
+            Header header = getHeader(byteChannel, filter);
+            List<Archive> archives = getArchives(byteChannel, header.getArchiveInfos(), filter);
             series = new Series(path.toString(), header, archives); //todo
         } catch (IOException e) {
             e.printStackTrace();
@@ -31,25 +30,31 @@ public class WspReaderImpl implements WspReader {
         return series;
     }
 
-    private List<Archive> getArchives(ReadableByteChannel byteChannel, List<ArchiveInfo> archiveInfos) throws IOException {
+    private List<Archive> getArchives(ReadableByteChannel byteChannel, List<ArchiveInfo> archiveInfos, Filter filter) throws IOException {
         List<Archive> archives = new ArrayList<>();
         for (ArchiveInfo archiveInfo : archiveInfos) {
-            archives.add(getArchive(byteChannel, archiveInfo));
+            archives.add(getArchive(byteChannel, archiveInfo, filter));
         }
         return archives;
     }
 
-    private Archive getArchive(ReadableByteChannel byteChannel, ArchiveInfo archiveInfo) throws IOException {
-        int archiveSize = (int) (DATAPOINT_SIZE_IN_BYTES * archiveInfo.getPoints());
+    private Archive getArchive(ReadableByteChannel byteChannel, ArchiveInfo archiveInfo, Filter filter) throws IOException {
+        int archiveSize = DATAPOINT_SIZE_IN_BYTES * archiveInfo.getPoints();
         ByteBuffer buf = ByteBuffer.allocate(archiveSize);
         byteChannel.read(buf);
         buf.rewind();
-        Archive archive = new Archive(archiveInfo);
+
+        Archive archive = filter.getDatapointComparator() != null ?
+                new Archive(archiveInfo, filter.getDatapointComparator()) :
+                new Archive(archiveInfo);
+
         do {
             int timestamp = buf.getInt();
-            if (timestamp == 0) continue;
+            if (filter.getTimestampPredicate().negate().test(timestamp)) continue;
+
             double value = buf.getDouble();
-            //if (value == 0.0) continue;
+            if (filter.getValuePredicate().negate().test(value)) continue;
+
             Datapoint datapoint = new Datapoint(timestamp, value);
             archive.addDatapoint(datapoint);
         } while (buf.hasRemaining());
@@ -57,9 +62,9 @@ public class WspReaderImpl implements WspReader {
         return archive;
     }
 
-    private Header getHeader(ReadableByteChannel byteChannel) throws IOException {
+    private Header getHeader(ReadableByteChannel byteChannel, Filter filter) throws IOException {
         Metadata metadata = getMetadata(byteChannel);
-        List<ArchiveInfo> archiveInfos = getArchiveInfos(byteChannel, metadata.getArchiveCount());
+        List<ArchiveInfo> archiveInfos = getArchiveInfos(byteChannel, metadata.getArchiveCount(), filter);
         return new Header(metadata, archiveInfos);
     }
 
@@ -68,25 +73,28 @@ public class WspReaderImpl implements WspReader {
         byteChannel.read(buf);
         buf.rewind();
         return Metadata.Builder.newInstance()
-                .aggregationType(getUnsignedLongFrom4Bytes(buf))
+                .aggregationType(buf.getInt())
                 .maxRetention(getUnsignedLongFrom4Bytes(buf))
                 .xFilesFactor(buf.getFloat())
                 .archiveCount(buf.getInt())
                 .build();
     }
 
-    private List<ArchiveInfo> getArchiveInfos(ReadableByteChannel byteChannel, int archiveCount) throws IOException {
+    private List<ArchiveInfo> getArchiveInfos(ReadableByteChannel byteChannel, int archiveCount, Filter filter) throws IOException {
         ByteBuffer buf = ByteBuffer.allocate(ARCHIVE_INFO_SIZE_IN_BYTES * archiveCount);
         byteChannel.read(buf);
         buf.rewind();
         List<ArchiveInfo> archiveInfos = new ArrayList<>();
         for (int i = 1; i <= archiveCount; i++) {
             ArchiveInfo archiveInfo = ArchiveInfo.Builder.newInstance()
-                    .offset(getUnsignedLongFrom4Bytes(buf))
-                    .secondsPerPoint(getUnsignedLongFrom4Bytes(buf))
-                    .points(getUnsignedLongFrom4Bytes(buf))
+                    .offset(buf.getInt())
+                    .secondsPerPoint(buf.getInt())
+                    .points(buf.getInt())
                     .build();
-            archiveInfos.add(archiveInfo);
+            if (filter.getSecondsPerPointPredicate().test(archiveInfo.getSecondsPerPoint())) {
+                archiveInfos.add(archiveInfo);
+            }
+
         }
         return archiveInfos;
     }

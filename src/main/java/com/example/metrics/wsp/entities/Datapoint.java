@@ -1,8 +1,8 @@
-package com.example.metrics.entity.wsp;
+package com.example.metrics.wsp.entities;
 
 import java.util.Date;
 
-public class Datapoint implements Comparable {
+public class Datapoint {
     private final int timestamp;
     private final Double value;
 
@@ -17,11 +17,6 @@ public class Datapoint implements Comparable {
 
     public Double getValue() {
         return value;
-    }
-
-    @Override
-    public int compareTo(Object o) {
-        return this.timestamp - ((Datapoint) o).getTimestamp();
     }
 
     public Date getDate() {

@@ -1,8 +1,8 @@
 package com.example.metrics;
 
-import com.example.metrics.entity.wsp.Datapoint;
-import com.example.metrics.entity.wsp.Series;
 import com.example.metrics.srv.SeriesService;
+import com.example.metrics.wsp.entities.Datapoint;
+import com.example.metrics.wsp.entities.Series;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.TreeSet;
+import java.util.Set;
 
 @Component
 public class Run {
@@ -36,7 +36,7 @@ public class Run {
 
     }
 
-    private void saveToCsv(Path csvPath, TreeSet<Datapoint> datapoints) {
+    private void saveToCsv(Path csvPath, Set<Datapoint> datapoints) {
         try(PrintWriter csvFile = new PrintWriter(csvPath.toFile())){
             CSVPrinter csvPrinter = new CSVPrinter(csvFile, CSVFormat.DEFAULT);
             for(Datapoint datapoint : datapoints){

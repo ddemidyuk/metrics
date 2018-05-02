@@ -18,6 +18,9 @@ public class AppProperties {
     @Value("${timestamp.to.aggregate.accuracy}")
     private int timestampToAggregateAccuracy;
 
+    @Value("${seconds.per.point}")
+    private int secondsPerPoint;
+
     @Value("${non.null.metrics.per.timestamp.threshold}")
     private int nonNullMetricsPerTimestampThreshold;
 
@@ -55,6 +58,10 @@ public class AppProperties {
 
     public String getOutputCsvPath() {
         return outputCsvPath;
+    }
+
+    public int getSecondsPerPoint() {
+        return secondsPerPoint;
     }
 
     public List<String> getMetricsToAggregateIds() {

@@ -1,7 +1,9 @@
 package com.example.metrics.srv;
 
 import com.example.metrics.AppProperties;
-import com.example.metrics.entity.wsp.Series;
+import com.example.metrics.wsp.entities.Series;
+import com.example.metrics.wsp.service.Filter;
+import com.example.metrics.wsp.service.WspReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +28,13 @@ public class SeriesServiceImpl implements SeriesService {
     }
 
     public List<Series> getSeriesListBySeriesIds() throws IOException {
-        Filter filter = new Filter(appProperties.getTimestampToAggregateAccuracy());
+
+        Filter filter = Filter.Builder.newInstance()
+                .timestampPredicate(Filter.ignoreZeroIntPredicate)
+                .secondsPerPointPredicate(s -> s == appProperties.getSecondsPerPoint())
+                .datapointComparator(Filter.ascDatapointComparator)
+                .build();
+
         return appProperties.getMetricsToAggregateIds().stream()
                 .map(metricId -> appProperties.getInputDataRootPath() + metricId + DATABASE_FILE_EXTENSION)
                 .map(Paths::get)

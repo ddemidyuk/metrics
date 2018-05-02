@@ -1,6 +1,6 @@
-package com.example.metrics.srv;
+package com.example.metrics.wsp.service;
 
-import com.example.metrics.entity.wsp.Series;
+import com.example.metrics.wsp.entities.Series;
 
 import java.nio.file.Path;
 

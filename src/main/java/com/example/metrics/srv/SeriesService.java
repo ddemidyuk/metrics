@@ -1,6 +1,6 @@
 package com.example.metrics.srv;
 
-import com.example.metrics.entity.wsp.Series;
+import com.example.metrics.wsp.entities.Series;
 
 import java.io.IOException;
 import java.util.List;

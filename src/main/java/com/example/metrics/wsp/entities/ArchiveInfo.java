@@ -1,9 +1,9 @@
-package com.example.metrics.entity.wsp;
+package com.example.metrics.wsp.entities;
 
 public class ArchiveInfo {
-    private final Long offset;
-    private final Long secondsPerPoint;
-    private final Long points;
+    private final int offset;
+    private final int secondsPerPoint;
+    private final int points;
 
     private ArchiveInfo(Builder builder) {
         this.offset = builder.offset;
@@ -11,23 +11,23 @@ public class ArchiveInfo {
         this.points = builder.points;
     }
 
-    public Long getOffset() {
+    public int getOffset() {
         return offset;
     }
 
-    public Long getSecondsPerPoint() {
+    public int getSecondsPerPoint() {
         return secondsPerPoint;
     }
 
-    public Long getPoints() {
+    public int getPoints() {
         return points;
     }
 
 
     public static final class Builder {
-        private Long offset;
-        private Long secondsPerPoint;
-        private Long points;
+        private int offset;
+        private int secondsPerPoint;
+        private int points;
 
         private Builder() {
         }
@@ -36,17 +36,17 @@ public class ArchiveInfo {
             return new Builder();
         }
 
-        public Builder offset(Long offset) {
+        public Builder offset(int offset) {
             this.offset = offset;
             return this;
         }
 
-        public Builder secondsPerPoint(Long secondsPerPoint) {
+        public Builder secondsPerPoint(int secondsPerPoint) {
             this.secondsPerPoint = secondsPerPoint;
             return this;
         }
 
-        public Builder points(Long points) {
+        public Builder points(int points) {
             this.points = points;
             return this;
         }
