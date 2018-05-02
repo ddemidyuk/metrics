@@ -24,8 +24,8 @@ public class WspReaderImpl implements WspReader {
         Series series = null;
         Path path = Paths.get(params.getRootPath() + params.getSeriesId() + DATABASE_FILE_EXTENSION);
         try (ReadableByteChannel byteChannel = Files.newByteChannel(path)) {
-            Header header = getHeader(byteChannel, params);
-            List<Archive> archives = getArchives(byteChannel, header.getArchiveInfos(), params);
+            Header header = getHeader(byteChannel, params.getFilter());
+            List<Archive> archives = getArchives(byteChannel, header.getArchiveInfos(), params.getFilter());
             series = new Series(params.getSeriesId(), header, archives);
         } catch (IOException e) {
             e.printStackTrace();
@@ -33,31 +33,31 @@ public class WspReaderImpl implements WspReader {
         return series;
     }
 
-    private List<Archive> getArchives(ReadableByteChannel byteChannel, List<ArchiveInfo> archiveInfos, Params params) throws IOException {
+    private List<Archive> getArchives(ReadableByteChannel byteChannel, List<ArchiveInfo> archiveInfos, Filter filter) throws IOException {
         List<Archive> archives = new ArrayList<>();
         for (ArchiveInfo archiveInfo : archiveInfos) {
-            archives.add(getArchive(byteChannel, archiveInfo, params));
+            archives.add(getArchive(byteChannel, archiveInfo, filter));
         }
         return archives;
     }
 
-    private Archive getArchive(ReadableByteChannel byteChannel, ArchiveInfo archiveInfo, Params params) throws IOException {
+    private Archive getArchive(ReadableByteChannel byteChannel, ArchiveInfo archiveInfo, Filter filter) throws IOException {
         int archiveSize = DATAPOINT_SIZE_IN_BYTES * archiveInfo.getPoints();
         ByteBuffer buf = ByteBuffer.allocate(archiveSize);
         byteChannel.read(buf);
         buf.rewind();
 
         //todo значение points будет некорректным так как мы бедем фильтровать точки
-        Archive archive = params.getDatapointComparator() != null ?
-                new Archive(archiveInfo, params.getDatapointComparator()) :
+        Archive archive = filter.getDatapointComparator() != null ?
+                new Archive(archiveInfo, filter.getDatapointComparator()) :
                 new Archive(archiveInfo);
 
         do {
             int timestamp = buf.getInt();
-            if (params.getTimestampPredicate().negate().test(timestamp)) continue;
+            if (filter.getTimestampPredicate().negate().test(timestamp)) continue;
 
             double value = buf.getDouble();
-            if (params.getValuePredicate().negate().test(value)) continue;
+            if (filter.getValuePredicate().negate().test(value)) continue;
 
             Datapoint datapoint = new Datapoint(timestamp, value);
             archive.addDatapoint(datapoint);
@@ -66,9 +66,9 @@ public class WspReaderImpl implements WspReader {
         return archive;
     }
 
-    private Header getHeader(ReadableByteChannel byteChannel, Params params) throws IOException {
+    private Header getHeader(ReadableByteChannel byteChannel, Filter filter) throws IOException {
         Metadata metadata = getMetadata(byteChannel);
-        List<ArchiveInfo> archiveInfos = getArchiveInfos(byteChannel, metadata.getArchiveCount(), params);
+        List<ArchiveInfo> archiveInfos = getArchiveInfos(byteChannel, metadata.getArchiveCount(), filter);
         return new Header(metadata, archiveInfos);
     }
 
@@ -84,7 +84,7 @@ public class WspReaderImpl implements WspReader {
                 .build();
     }
 
-    private List<ArchiveInfo> getArchiveInfos(ReadableByteChannel byteChannel, int archiveCount, Params params) throws IOException {
+    private List<ArchiveInfo> getArchiveInfos(ReadableByteChannel byteChannel, int archiveCount, Filter filter) throws IOException {
         ByteBuffer buf = ByteBuffer.allocate(ARCHIVE_INFO_SIZE_IN_BYTES * archiveCount);
         byteChannel.read(buf);
         buf.rewind();
@@ -95,7 +95,7 @@ public class WspReaderImpl implements WspReader {
                     .secondsPerPoint(buf.getInt())
                     .points(buf.getInt())
                     .build();
-            if (params.getSecondsPerPointPredicate().test(archiveInfo.getSecondsPerPoint())) {
+            if (filter.getSecondsPerPointPredicate().test(archiveInfo.getSecondsPerPoint())) {
                 archiveInfos.add(archiveInfo);
             }
 

@@ -11,6 +11,17 @@ public class Params {
         this.filter = builder.filter;
     }
 
+    public String getRootPath() {
+        return rootPath;
+    }
+
+    public String getSeriesId() {
+        return seriesId;
+    }
+
+    public Filter getFilter() {
+        return filter;
+    }
 
     public static final class Builder {
         private String rootPath;
