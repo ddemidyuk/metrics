@@ -38,10 +38,11 @@ public class AppProperties {
     @PostConstruct
     public void init() throws IOException {
         File csvData = new File(metricsToAggregateListPath);
-        CSVParser parser = CSVParser.parse(csvData, Charset.forName("UTF-8"), CSVFormat.DEFAULT);
+        CSVParser parser = CSVParser.parse(csvData, Charset.forName("UTF-8"), CSVFormat.DEFAULT.withFirstRecordAsHeader());
         for (CSVRecord csvRecord : parser) {
             metricsToAggregateIds.add(csvRecord.get(0));//todo
         }
+        parser.close();
     }
 
     public int getTimestampToAggregateAccuracy() {
@@ -64,7 +65,7 @@ public class AppProperties {
         return secondsPerPoint;
     }
 
-    public List<String> getMetricsToAggregateIds() {
+    public List<String> getMetricIds() {
         return metricsToAggregateIds;
     }
 }

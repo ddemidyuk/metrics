@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,43 +18,46 @@ public class WspReaderImpl implements WspReader {
     private static final int METADATA_SIZE_IN_BYTES = 16;
     private static final int ARCHIVE_INFO_SIZE_IN_BYTES = 12;
     private static final int DATAPOINT_SIZE_IN_BYTES = 12;
+    private static final String DATABASE_FILE_EXTENSION = ".wsp";
 
-    public Series getSeriesByWspFilePath(Path path, Filter filter) {
+    public Series getSeriesByWspFilePath(Params params) {
         Series series = null;
+        Path path = Paths.get(params.getRootPath() + params.getSeriesId() + DATABASE_FILE_EXTENSION);
         try (ReadableByteChannel byteChannel = Files.newByteChannel(path)) {
-            Header header = getHeader(byteChannel, filter);
-            List<Archive> archives = getArchives(byteChannel, header.getArchiveInfos(), filter);
-            series = new Series(path.toString(), header, archives); //todo
+            Header header = getHeader(byteChannel, params);
+            List<Archive> archives = getArchives(byteChannel, header.getArchiveInfos(), params);
+            series = new Series(params.getSeriesId(), header, archives);
         } catch (IOException e) {
             e.printStackTrace();
         }
         return series;
     }
 
-    private List<Archive> getArchives(ReadableByteChannel byteChannel, List<ArchiveInfo> archiveInfos, Filter filter) throws IOException {
+    private List<Archive> getArchives(ReadableByteChannel byteChannel, List<ArchiveInfo> archiveInfos, Params params) throws IOException {
         List<Archive> archives = new ArrayList<>();
         for (ArchiveInfo archiveInfo : archiveInfos) {
-            archives.add(getArchive(byteChannel, archiveInfo, filter));
+            archives.add(getArchive(byteChannel, archiveInfo, params));
         }
         return archives;
     }
 
-    private Archive getArchive(ReadableByteChannel byteChannel, ArchiveInfo archiveInfo, Filter filter) throws IOException {
+    private Archive getArchive(ReadableByteChannel byteChannel, ArchiveInfo archiveInfo, Params params) throws IOException {
         int archiveSize = DATAPOINT_SIZE_IN_BYTES * archiveInfo.getPoints();
         ByteBuffer buf = ByteBuffer.allocate(archiveSize);
         byteChannel.read(buf);
         buf.rewind();
 
-        Archive archive = filter.getDatapointComparator() != null ?
-                new Archive(archiveInfo, filter.getDatapointComparator()) :
+        //todo значение points будет некорректным так как мы бедем фильтровать точки
+        Archive archive = params.getDatapointComparator() != null ?
+                new Archive(archiveInfo, params.getDatapointComparator()) :
                 new Archive(archiveInfo);
 
         do {
             int timestamp = buf.getInt();
-            if (filter.getTimestampPredicate().negate().test(timestamp)) continue;
+            if (params.getTimestampPredicate().negate().test(timestamp)) continue;
 
             double value = buf.getDouble();
-            if (filter.getValuePredicate().negate().test(value)) continue;
+            if (params.getValuePredicate().negate().test(value)) continue;
 
             Datapoint datapoint = new Datapoint(timestamp, value);
             archive.addDatapoint(datapoint);
@@ -62,9 +66,9 @@ public class WspReaderImpl implements WspReader {
         return archive;
     }
 
-    private Header getHeader(ReadableByteChannel byteChannel, Filter filter) throws IOException {
+    private Header getHeader(ReadableByteChannel byteChannel, Params params) throws IOException {
         Metadata metadata = getMetadata(byteChannel);
-        List<ArchiveInfo> archiveInfos = getArchiveInfos(byteChannel, metadata.getArchiveCount(), filter);
+        List<ArchiveInfo> archiveInfos = getArchiveInfos(byteChannel, metadata.getArchiveCount(), params);
         return new Header(metadata, archiveInfos);
     }
 
@@ -80,7 +84,7 @@ public class WspReaderImpl implements WspReader {
                 .build();
     }
 
-    private List<ArchiveInfo> getArchiveInfos(ReadableByteChannel byteChannel, int archiveCount, Filter filter) throws IOException {
+    private List<ArchiveInfo> getArchiveInfos(ReadableByteChannel byteChannel, int archiveCount, Params params) throws IOException {
         ByteBuffer buf = ByteBuffer.allocate(ARCHIVE_INFO_SIZE_IN_BYTES * archiveCount);
         byteChannel.read(buf);
         buf.rewind();
@@ -91,7 +95,7 @@ public class WspReaderImpl implements WspReader {
                     .secondsPerPoint(buf.getInt())
                     .points(buf.getInt())
                     .build();
-            if (filter.getSecondsPerPointPredicate().test(archiveInfo.getSecondsPerPoint())) {
+            if (params.getSecondsPerPointPredicate().test(archiveInfo.getSecondsPerPoint())) {
                 archiveInfos.add(archiveInfo);
             }
 

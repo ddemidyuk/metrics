@@ -1,8 +1,8 @@
 package com.example.metrics;
 
-import com.example.metrics.srv.SeriesService;
+import com.example.metrics.interval.entities.Metric;
+import com.example.metrics.interval.srv.IntervalService;
 import com.example.metrics.wsp.entities.Datapoint;
-import com.example.metrics.wsp.entities.Series;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,18 +21,18 @@ public class Run {
     private static final Path csvPath = Paths.get("C:\\TEMP\\metrics.csv");
 
     @Autowired
-    SeriesService seriesService;
+    IntervalService intervalService;
 
     public  void start(String... args) throws IOException {
         String[] seriesIds = {"adserver-00\\cpu\\percent\\wait.wsp"};
 
-        List<Series> seriesList = seriesService.getSeriesListBySeriesIds();
+        List<Metric> seriesList = intervalService.getMetrics();
         createMetricCsv(csvPath, seriesIds);
-        saveToCsv(csvPath, seriesList.get(0).getArchives().get(0).getDatapoints());
+        /*saveToCsv(csvPath, seriesList.get(0).getArchives().get(0).getDatapoints());
         createMetricCsv(Paths.get("C:\\TEMP\\metrics1.csv"), seriesIds);
         saveToCsv(Paths.get("C:\\TEMP\\metrics1.csv"), seriesList.get(1).getArchives().get(0).getDatapoints());
         createMetricCsv(Paths.get("C:\\TEMP\\metrics2.csv"), seriesIds);
-        saveToCsv(Paths.get("C:\\TEMP\\metrics2.csv"), seriesList.get(2).getArchives().get(0).getDatapoints());
+        saveToCsv(Paths.get("C:\\TEMP\\metrics2.csv"), seriesList.get(2).getArchives().get(0).getDatapoints());*/
 
     }
 

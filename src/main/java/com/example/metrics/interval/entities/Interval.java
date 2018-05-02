@@ -1,8 +1,7 @@
-package com.example.metrics.entity.interval;
+package com.example.metrics.interval.entities;
 
 public class Interval {
     private final int startTimestamp;
-    private final int endTimestamp;
     private final double[] values;
     private final int secondsPerPoint;
 
@@ -10,7 +9,6 @@ public class Interval {
         this.startTimestamp = builder.startTimestamp;
         this.values = builder.values;
         this.secondsPerPoint = builder.secondsPerPoint;
-        this.endTimestamp = this.startTimestamp + this.values.length * this.secondsPerPoint;
     }
 
     public int getStartTimestamp() {
@@ -26,7 +24,7 @@ public class Interval {
     }
 
     public int getEndTimestamp() {
-        return endTimestamp;
+        return startTimestamp + values.length * secondsPerPoint;
     }
 
     public static final class Builder {

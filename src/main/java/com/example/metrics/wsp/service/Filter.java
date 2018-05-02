@@ -12,23 +12,22 @@ public class Filter {
     private final IntPredicate secondsPerPointPredicate;
     private final Comparator<Datapoint> datapointComparator;
 
-    private static final IntPredicate alwaysTrueIntPredicate = i -> true;
-    private static final DoublePredicate alwaysTrueDoublePredicate = d -> true;
+    private static final IntPredicate ALWAYS_TRUE_INT_PREDICATE = i -> true;
+    private static final DoublePredicate ALWAYS_TRUE_DOUBLE_PREDICATE = d -> true;
 
-    public static final Comparator<Datapoint> ascDatapointComparator = (d1, d2) -> d1.getTimestamp() - d2.getTimestamp();
-    public static final Comparator<Datapoint> descDatapointComparator = (d1, d2) -> d2.getTimestamp() - d1.getTimestamp();
-    public static final IntPredicate ignoreZeroIntPredicate = i -> i != 0;
-    public static final DoublePredicate ignoreZeroDoublePredicate = d -> d != 0.0;
+    public static final Comparator<Datapoint> ASC_DATAPOINT_COMPARATOR = (d1, d2) -> d1.getTimestamp() - d2.getTimestamp();
+    public static final Comparator<Datapoint> DESC_DATAPOINT_COMPARATOR = (d1, d2) -> d2.getTimestamp() - d1.getTimestamp();
+    public static final IntPredicate SKIP_ZERO_INT_PREDICATE = i -> i != 0;
+    public static final DoublePredicate SKIP_ZERO_DOUBLE_PREDICATE = d -> d != 0.0;
 
 
     private Filter(Builder builder) {
-        this.timestampPredicate = builder.timestampPredicate != null ? builder.timestampPredicate : alwaysTrueIntPredicate;
-        this.valuePredicate = builder.valuePredicate != null ? builder.valuePredicate : alwaysTrueDoublePredicate;
-        this.secondsPerPointPredicate = builder.secondsPerPointPredicate != null ? builder.secondsPerPointPredicate : alwaysTrueIntPredicate;
+        this.timestampPredicate = builder.timestampPredicate != null ? builder.timestampPredicate : ALWAYS_TRUE_INT_PREDICATE;
+        this.valuePredicate = builder.valuePredicate != null ? builder.valuePredicate : ALWAYS_TRUE_DOUBLE_PREDICATE;
+        this.secondsPerPointPredicate = builder.secondsPerPointPredicate != null ? builder.secondsPerPointPredicate : ALWAYS_TRUE_INT_PREDICATE;
         this.datapointComparator = builder.datapointComparator;
     }
-
-
+    
     public IntPredicate getTimestampPredicate() {
         return timestampPredicate;
     }
@@ -46,6 +45,7 @@ public class Filter {
     }
 
     public static final class Builder {
+
         private IntPredicate timestampPredicate;
         private DoublePredicate valuePredicate;
         private IntPredicate secondsPerPointPredicate;
@@ -57,6 +57,7 @@ public class Filter {
         public static Builder newInstance() {
             return new Builder();
         }
+        
 
         public Builder timestampPredicate(IntPredicate timestampPredicate) {
             this.timestampPredicate = timestampPredicate;

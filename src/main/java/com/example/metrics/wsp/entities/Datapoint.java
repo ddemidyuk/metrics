@@ -4,9 +4,9 @@ import java.util.Date;
 
 public class Datapoint {
     private final int timestamp;
-    private final Double value;
+    private final double value;
 
-    public Datapoint(int timestamp, Double value) {
+    public Datapoint(int timestamp, double value) {
         this.timestamp = timestamp;
         this.value = value;
     }
@@ -15,7 +15,7 @@ public class Datapoint {
         return timestamp;
     }
 
-    public Double getValue() {
+    public double getValue() {
         return value;
     }
 

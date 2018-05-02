@@ -23,7 +23,6 @@ public class ArchiveInfo {
         return points;
     }
 
-
     public static final class Builder {
         private int offset;
         private int secondsPerPoint;
