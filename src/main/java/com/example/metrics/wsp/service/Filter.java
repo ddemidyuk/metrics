@@ -18,7 +18,7 @@ public class Filter {
     public static final Comparator<Datapoint> ASC_DATAPOINT_COMPARATOR = (d1, d2) -> d1.getTimestamp() - d2.getTimestamp();
     public static final Comparator<Datapoint> DESC_DATAPOINT_COMPARATOR = (d1, d2) -> d2.getTimestamp() - d1.getTimestamp();
     public static final IntPredicate SKIP_ZERO_INT_PREDICATE = i -> i != 0;
-    public static final DoublePredicate SKIP_ZERO_DOUBLE_PREDICATE = d -> d != 0.0;
+    public static final DoublePredicate SKIP_ZERO_DOUBLE_PREDICATE = d -> d != 0d;
 
 
     private Filter(Builder builder) {
