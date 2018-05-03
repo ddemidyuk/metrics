@@ -1,6 +1,7 @@
 package com.example.metrics.interval.srv;
 
 import com.example.metrics.AppProperties;
+import com.example.metrics.interval.entities.FloatInterval;
 import com.example.metrics.interval.entities.Interval;
 import com.example.metrics.interval.entities.Metric;
 import com.example.metrics.wsp.entities.Archive;
@@ -72,7 +73,7 @@ public class IntervalServiceImpl implements IntervalService {
                 startTimestamp = timestamp;
             }
             if (!isFirstStep && (timestamp - priorTimestemp != secondsPerPoint)) {
-                Interval interval = Interval.Builder.newInstance()
+                Interval interval = FloatInterval.Builder.newInstance()
                         .secondsPerPoint(secondsPerPoint)
                         .startTimestamp(startTimestamp)
                         .values(Arrays.copyOf(values, intervalLength - 1))

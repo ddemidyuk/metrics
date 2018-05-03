@@ -23,7 +23,7 @@ public class Run {
     @Autowired
     IntervalService intervalService;
 
-    public  void start(String... args) throws IOException {
+    public void start(String... args) throws IOException {
         String[] seriesIds = {"adserver-00\\cpu\\percent\\wait.wsp"};
 
         List<Metric> seriesList = intervalService.getMetrics();
@@ -37,9 +37,9 @@ public class Run {
     }
 
     private void saveToCsv(Path csvPath, Set<Datapoint> datapoints) {
-        try(PrintWriter csvFile = new PrintWriter(csvPath.toFile())){
+        try (PrintWriter csvFile = new PrintWriter(csvPath.toFile())) {
             CSVPrinter csvPrinter = new CSVPrinter(csvFile, CSVFormat.DEFAULT);
-            for(Datapoint datapoint : datapoints){
+            for (Datapoint datapoint : datapoints) {
                 csvPrinter.print(datapoint.getDate());
                 csvPrinter.print(datapoint.getValue());
                 csvPrinter.println();
@@ -56,11 +56,11 @@ public class Run {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        try(PrintWriter csvFile = new PrintWriter(Files.createFile(path).toFile())){
+        try (PrintWriter csvFile = new PrintWriter(Files.createFile(path).toFile())) {
             CSVPrinter csvPrinter = new CSVPrinter(csvFile, CSVFormat.DEFAULT);
             csvPrinter.print("timestamp");
 
-            for(String metricId : metricIds){
+            for (String metricId : metricIds) {
                 csvPrinter.print(metricId);
             }
 

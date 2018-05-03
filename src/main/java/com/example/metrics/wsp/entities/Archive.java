@@ -5,15 +5,16 @@ import java.util.*;
 public class Archive {
     private final ArchiveInfo archiveInfo;
     private final Set<Datapoint> datapoints;
+    private int zeroValueCount = 0;
 
     public Archive(ArchiveInfo archiveInfo) {
         this.archiveInfo = archiveInfo;
-        this.datapoints =  new LinkedHashSet<>();
+        this.datapoints = new LinkedHashSet<>();
     }
 
     public Archive(ArchiveInfo archiveInfo, Comparator<Datapoint> datapointComparator) {
         this.archiveInfo = archiveInfo;
-        this.datapoints =  new TreeSet<>(datapointComparator);
+        this.datapoints = new TreeSet<>(datapointComparator);
     }
 
     public ArchiveInfo getArchiveInfo() {
@@ -24,7 +25,14 @@ public class Archive {
         return datapoints;
     }
 
-    public void addDatapoint(Datapoint datapoint){
+    public double getZeroRatio() {
+        return zeroValueCount / datapoints.size();
+    }
+
+    public void addDatapoint(Datapoint datapoint) {
+        if (datapoint.getValue() == 0.0) {
+            zeroValueCount++;
+        }
         datapoints.add(datapoint);
     }
 }
