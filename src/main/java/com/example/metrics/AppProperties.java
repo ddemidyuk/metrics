@@ -15,8 +15,6 @@ import java.util.List;
 
 @Configuration
 public class AppProperties {
-    @Value("${timestamp.to.aggregate.accuracy}")
-    private int timestampToAggregateAccuracy;
 
     @Value("${seconds.per.point}")
     private int secondsPerPoint;
@@ -43,10 +41,6 @@ public class AppProperties {
             metricsToAggregateIds.add(csvRecord.get(0));//todo
         }
         parser.close();
-    }
-
-    public int getTimestampToAggregateAccuracy() {
-        return timestampToAggregateAccuracy;
     }
 
     public int getNonNullMetricsPerTimestampThreshold() {

@@ -1,16 +1,20 @@
-package com.example.metrics.interval.entities;
+package com.example.metrics.interval.entities.factory;
+
+import com.example.metrics.interval.entities.Interval;
 
 import java.util.Arrays;
 
-public class ZeroInterval implements Interval {
+class  ConstInterval implements Interval {
     private final int startTimestamp;
     private final int endTimestamp;
     private final int secondsPerPoint;
+    private final double value;
 
-    private ZeroInterval(Builder builder) {
+    private ConstInterval(Builder builder) {
         this.startTimestamp = builder.startTimestamp;
         this.endTimestamp = builder.endTimestamp;
         this.secondsPerPoint = builder.secondsPerPoint;
+        this.value = builder.value;
     }
 
     public int getStartTimestamp() {
@@ -19,7 +23,7 @@ public class ZeroInterval implements Interval {
 
     public double[] getValues() {
         double[] values = new double[(startTimestamp - endTimestamp) / secondsPerPoint];
-        Arrays.fill(values, 0d);
+        Arrays.fill(values, value);
         return values;
     }
 
@@ -27,7 +31,7 @@ public class ZeroInterval implements Interval {
         if (timestamp < startTimestamp || timestamp > endTimestamp) {
             return null;
         }
-        return 0d;
+        return value;
     }
 
     public int getSecondsPerPoint() {
@@ -42,6 +46,7 @@ public class ZeroInterval implements Interval {
         private int startTimestamp;
         private int endTimestamp;
         private int secondsPerPoint;
+        private double value;
 
         private Builder() {
         }
@@ -60,13 +65,17 @@ public class ZeroInterval implements Interval {
             return this;
         }
 
+        public Builder value(double value) {
+            this.value = value;
+            return this;
+        }
         public Builder secondsPerPoint(int secondsPerPoint) {
             this.secondsPerPoint = secondsPerPoint;
             return this;
         }
 
-        public ZeroInterval build() {
-            return new ZeroInterval(this);
+        public ConstInterval build() {
+            return new ConstInterval(this);
         }
     }
 }

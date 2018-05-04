@@ -5,7 +5,6 @@ import java.util.*;
 public class Archive {
     private final ArchiveInfo archiveInfo;
     private final Set<Datapoint> datapoints;
-    private int zeroValueCount = 0;
 
     public Archive(ArchiveInfo archiveInfo) {
         this.archiveInfo = archiveInfo;
@@ -25,14 +24,7 @@ public class Archive {
         return datapoints;
     }
 
-    public double getZeroRatio() {
-        return zeroValueCount / datapoints.size();
-    }
-
     public void addDatapoint(Datapoint datapoint) {
-        if (datapoint.getValue() == 0.0) {
-            zeroValueCount++;
-        }
         datapoints.add(datapoint);
     }
 }

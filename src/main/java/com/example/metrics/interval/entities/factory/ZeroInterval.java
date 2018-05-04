@@ -1,13 +1,18 @@
-package com.example.metrics.interval.entities;
+package com.example.metrics.interval.entities.factory;
 
-public class SimpleInterval implements Interval {
+import com.example.metrics.interval.entities.Interval;
+
+import java.util.Arrays;
+
+class ZeroInterval implements Interval {
     private final int startTimestamp;
-    private final double[] values;
+    private final int endTimestamp;
     private final int secondsPerPoint;
+    private static final double VALUE = 0d;
 
-    private SimpleInterval(Builder builder) {
+    private ZeroInterval(Builder builder) {
         this.startTimestamp = builder.startTimestamp;
-        this.values = builder.values;
+        this.endTimestamp = builder.endTimestamp;
         this.secondsPerPoint = builder.secondsPerPoint;
     }
 
@@ -16,14 +21,16 @@ public class SimpleInterval implements Interval {
     }
 
     public double[] getValues() {
+        double[] values = new double[(startTimestamp - endTimestamp) / secondsPerPoint];
+        Arrays.fill(values, VALUE);
         return values;
     }
 
     public Double getValue(int timestamp) {
-        if (timestamp < startTimestamp || timestamp > getEndTimestamp()) {
+        if (timestamp < startTimestamp || timestamp > endTimestamp) {
             return null;
         }
-        return values[(timestamp - startTimestamp) / secondsPerPoint];
+        return VALUE;
     }
 
     public int getSecondsPerPoint() {
@@ -31,12 +38,12 @@ public class SimpleInterval implements Interval {
     }
 
     public int getEndTimestamp() {
-        return startTimestamp + values.length * secondsPerPoint;
+        return endTimestamp;
     }
 
     public static final class Builder {
         private int startTimestamp;
-        private double[] values;
+        private int endTimestamp;
         private int secondsPerPoint;
 
         private Builder() {
@@ -51,8 +58,8 @@ public class SimpleInterval implements Interval {
             return this;
         }
 
-        public Builder values(double[] values) {
-            this.values = values;
+        public Builder endTimestamp(int endTimestamp) {
+            this.endTimestamp = endTimestamp;
             return this;
         }
 
@@ -61,8 +68,8 @@ public class SimpleInterval implements Interval {
             return this;
         }
 
-        public SimpleInterval build() {
-            return new SimpleInterval(this);
+        public ZeroInterval build() {
+            return new ZeroInterval(this);
         }
     }
 }

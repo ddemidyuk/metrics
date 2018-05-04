@@ -1,20 +1,19 @@
-package com.example.metrics.interval.entities;
+package com.example.metrics.interval.entities.factory;
 
-import java.util.Arrays;
+import com.example.metrics.interval.entities.Interval;
 
-public class FloatInterval implements Interval {
+class SimpleInterval implements Interval {
     private final int startTimestamp;
-    private final float[] values;
+    private final int endTimestamp;
+    private final double[] values;
     private final int secondsPerPoint;
 
-    private FloatInterval(Builder builder) {
+    private SimpleInterval(Builder builder) {
         this.startTimestamp = builder.startTimestamp;
+        this.values = builder.values;
         this.secondsPerPoint = builder.secondsPerPoint;
-        float[] floatValues = new float[builder.values.length];
-        for(int i = 0; i<floatValues.length; i++){
-            floatValues[i] = (float) builder.values[i];
-        }
-        this.values = floatValues;
+        this.endTimestamp = this.startTimestamp + this.values.length * this.secondsPerPoint;
+
     }
 
     public int getStartTimestamp() {
@@ -22,17 +21,14 @@ public class FloatInterval implements Interval {
     }
 
     public double[] getValues() {
-        double[] doubleValues = new double[values.length];
-        Arrays.setAll(doubleValues, i -> (double) values[i]);
-        return doubleValues;
+        return values;
     }
 
     public Double getValue(int timestamp) {
         if (timestamp < startTimestamp || timestamp > getEndTimestamp()) {
             return null;
         }
-
-        return (double) values[(timestamp - startTimestamp) / secondsPerPoint];
+        return values[(timestamp - startTimestamp) / secondsPerPoint];
     }
 
     public int getSecondsPerPoint() {
@@ -40,7 +36,7 @@ public class FloatInterval implements Interval {
     }
 
     public int getEndTimestamp() {
-        return startTimestamp + values.length * secondsPerPoint;
+        return endTimestamp;
     }
 
     public static final class Builder {
@@ -70,8 +66,8 @@ public class FloatInterval implements Interval {
             return this;
         }
 
-        public FloatInterval build() {
-            return new FloatInterval(this);
+        public SimpleInterval build() {
+            return new SimpleInterval(this);
         }
     }
 }
