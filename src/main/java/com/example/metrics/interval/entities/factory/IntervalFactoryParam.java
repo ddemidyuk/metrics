@@ -7,19 +7,23 @@ public class IntervalFactoryParam {
     private double[] buffer;
     private int countValues;
     private int secondsPerPoint;
-    private boolean isAllValuesAreTheSame;
+    private boolean allValuesAreTheSame;
+    private boolean theLastValuesAreTheSame;
+    private int[] endsOfSubIntervals;
+    private int countSubIntervals;
+
+    private static final int MIN_COUNT_OF_THE_SAME_VALUE_TO_COMBINE_IN_SUBINTERVAL = 10;
 
     public IntervalFactoryParam(Builder builder) {
-        this.startTimestamp = builder.startTimestamp;
         this.buffer = new double[builder.bufferSize];
         this.secondsPerPoint = builder.secondsPerPoint;
-        this.countValues = 0;
-        this.isAllValuesAreTheSame = true;
+        this.endsOfSubIntervals = new int[builder.bufferSize / MIN_COUNT_OF_THE_SAME_VALUE_TO_COMBINE_IN_SUBINTERVAL + 1];
+        reset(builder.startTimestamp);
     }
 
     public void addValue(double value) {
-        if (isAllValuesAreTheSame && countValues != 0 && buffer[countValues] != value) {
-            isAllValuesAreTheSame = false;
+        if (allValuesAreTheSame && countValues != 0 && buffer[countValues - 1] != value) {
+            allValuesAreTheSame = false;
         }
         buffer[countValues++] = value;
     }
@@ -39,7 +43,9 @@ public class IntervalFactoryParam {
     public void reset(int startTimestamp) {
         this.startTimestamp = startTimestamp;
         this.countValues = 0;
-        this.isAllValuesAreTheSame = true;
+        this.allValuesAreTheSame = true;
+        this.theLastValuesAreTheSame = false;
+        this.countSubIntervals = 0;
     }
 
     public int getSecondsPerPoint() {
@@ -47,9 +53,13 @@ public class IntervalFactoryParam {
     }
 
     public boolean isAllValuesAreTheSame() {
-        return isAllValuesAreTheSame;
+        return allValuesAreTheSame;
     }
 
+    public boolean canCreateNewIntervalOfTheSameValues(double value) {
+        return allValuesAreTheSame && countValues >= MIN_COUNT_OF_THE_SAME_VALUE_TO_COMBINE_IN_SUBINTERVAL
+                && value != buffer[0];
+    }
 
     public static final class Builder {
         private int startTimestamp;
