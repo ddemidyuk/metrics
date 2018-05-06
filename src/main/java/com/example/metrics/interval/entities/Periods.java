@@ -17,9 +17,9 @@ public class Periods implements Iterable<Period> {
 
     private enum IntersectionType {
         LESS(param -> {
-            Period firstPeriod = param.periods.pollFirst();
-            param.periods.addFirst(param.period);
-            param.periods.addFirst(firstPeriod);
+            Period lastPeriod = param.periods.pollLast();
+            param.periods.addLast(param.period);
+            param.periods.addLast(lastPeriod);
             param.period = null;
             param.isNeedNext = false;
             return param;
@@ -29,16 +29,16 @@ public class Periods implements Iterable<Period> {
             return param;
         }),
         RIGHT(param -> {
-            Period firstPeriod = param.periods.pollFirst();
-            Period period = new Period(param.period.getStartTimestamp(), firstPeriod.getEndTimestamp(), param.period.getSecondsPerPoint());
-            param.periods.addFirst(period);
+            Period lastPeriod = param.periods.pollLast();
+            Period period = new Period(param.period.getStartTimestamp(), lastPeriod.getEndTimestamp(), param.period.getSecondsPerPoint());
+            param.periods.addLast(period);
             param.period = null;
             param.isNeedNext = true;
             return param;
         }),
         LEFT(param -> {
-            Period firstPeriod = param.periods.pollFirst();
-            Period period = new Period(firstPeriod.getStartTimestamp(), param.period.getEndTimestamp(), param.period.getSecondsPerPoint());
+            Period lastPeriod = param.periods.pollLast();
+            Period period = new Period(lastPeriod.getStartTimestamp(), param.period.getEndTimestamp(), param.period.getSecondsPerPoint());
             param.period = period;
             param.isNeedNext = true;
             return param;
@@ -49,7 +49,7 @@ public class Periods implements Iterable<Period> {
             return param;
         }),
         WIDER(param -> {
-            param.periods.removeFirst();
+            param.periods.removeLast();
             param.isNeedNext = true;
             return param;
         });
@@ -72,14 +72,14 @@ public class Periods implements Iterable<Period> {
             param.period = newPeriod;
             do {
                 if(param.isNeedNext){
-                    if(periods.peekLast() != null){
-                        param.periods.addFirst(periods.pollLast());
+                    if(periods.peekFirst() != null){
+                        param.periods.addLast(periods.pollFirst());
                     }else {
-                        param.periods.addFirst(param.period);
+                        param.periods.addLast(param.period);
                         break;
                     }
                 }
-                param = ComparePeriods(param.periods.getFirst(), newPeriod).function.apply(param); //todo
+                param = ComparePeriods(param.periods.getLast(), newPeriod).function.apply(param); //todo
             } while (param.period != null);
         }
 
