@@ -26,4 +26,12 @@ public class Metrics implements Iterable<Metric>{
     public List<Metric> get() {
         return metrics;
     }
+
+    public List<Metric> getMetrics() {
+        return metrics;
+    }
+
+    public Periods getPeriods() {
+        return periods;
+    }
 }

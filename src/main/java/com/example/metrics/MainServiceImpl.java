@@ -49,12 +49,12 @@ public class MainServiceImpl implements MainService {
         createMetricCsv(csvPath);
         Metrics metrics = getMetrics();
         List<Double> values = new ArrayList<>(metrics.get().size());
-        /*for (int timestamp = metrics.getMinStartTimestamp(); timestamp <= metrics.getMaxEndTimestamp(); timestamp += appProperties.getSecondsPerPoint()) {
+        for (int timestamp : metrics.getPeriods()) {
             for (Metric metric : metrics) {
                 values.add(metric.getValue(timestamp));
             }
             saveToCsv(csvPath,timestamp, values);
-        }*/
+        }
     }
 
     private void saveToCsv(Path csvPath, int timestamp, List<Double> values) {
@@ -130,7 +130,7 @@ public class MainServiceImpl implements MainService {
                 .collect(Collectors.toList());
     }
 
-    //todo переписать говнокод
+    //todo refactor this
     private Metric getMetricFromFirstArchiveOfSeries(Series series) {
         Archive archive = series.getArchives().get(0);
         int secondsPerPoint = archive.getArchiveInfo().getSecondsPerPoint();
@@ -144,19 +144,19 @@ public class MainServiceImpl implements MainService {
                 .bufferSize(datapoints.size())
                 .build();
 
-        int priorTimestemp = 0;//todo
+        int priorTimestamp = 0;//todo
         int timestamp;
 
         boolean isFirstStep = true; //todo
         for (Datapoint datapoint : datapoints) {
             timestamp = datapoint.getTimestamp();
-            if (!isFirstStep && (timestamp - priorTimestemp != secondsPerPoint)) {
+            if (!isFirstStep && (timestamp - priorTimestamp != secondsPerPoint)) {
                 Interval interval = intervalFactory.createInterval(factoryParam);
                 intervals.add(interval);
                 factoryParam.reset(timestamp);
             }
             factoryParam.addValue(datapoint.getValue());
-            priorTimestemp = timestamp;
+            priorTimestamp = timestamp;
             isFirstStep = false;
         }
         return new Metric(series.getId(), intervals);

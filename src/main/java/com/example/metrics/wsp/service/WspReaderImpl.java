@@ -47,7 +47,7 @@ public class WspReaderImpl implements WspReader {
         byteChannel.read(buf);
         buf.rewind();
 
-        //todo значение points будет некорректным так как мы бедем фильтровать точки
+        //todo values of points will be incorrect  cause  points will have filtered
         Archive archive = filter.getDatapointComparator() != null ?
                 new Archive(archiveInfo, filter.getDatapointComparator()) :
                 new Archive(archiveInfo);
