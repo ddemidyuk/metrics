@@ -18,4 +18,15 @@ public class Metric {
     public List<Interval> getIntervals() {
         return intervals;
     }
+
+    public Double getValue(int timestamp) {
+        Double value = null;
+        for (Interval interval : intervals) {
+            value = interval.getValue(timestamp);
+            if (value != null){
+                break;
+            }
+        }
+        return value;
+    }
 }
