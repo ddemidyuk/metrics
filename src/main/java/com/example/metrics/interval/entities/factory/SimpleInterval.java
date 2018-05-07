@@ -10,9 +10,9 @@ class SimpleInterval implements Interval {
 
     private SimpleInterval(Builder builder) {
         this.startTimestamp = builder.startTimestamp;
+        this.endTimestamp = builder.endTimestamp;
         this.values = builder.values;
         this.secondsPerPoint = builder.secondsPerPoint;
-        this.endTimestamp = this.startTimestamp + this.values.length * this.secondsPerPoint;
 
     }
 
@@ -41,6 +41,7 @@ class SimpleInterval implements Interval {
 
     public static final class Builder {
         private int startTimestamp;
+        private int endTimestamp;
         private double[] values;
         private int secondsPerPoint;
 
@@ -63,6 +64,11 @@ class SimpleInterval implements Interval {
 
         public Builder secondsPerPoint(int secondsPerPoint) {
             this.secondsPerPoint = secondsPerPoint;
+            return this;
+        }
+
+        public Builder endTimestamp(int endTimestamp) {
+            this.endTimestamp = endTimestamp;
             return this;
         }
 

@@ -121,10 +121,9 @@ public class Periods implements Iterable<Integer> {
         private List<Period> arrPeriods = new ArrayList<>(periods);
 
         public boolean hasNext() {
-            if (periodNumber > arrPeriods.size() - 1) return false;
-
             Period period = arrPeriods.get(periodNumber);
-            if (periodNumber == arrPeriods.size() - 1 && period.getEndTimestamp() < timestampNumber * period.getSecondsPerPoint())
+            if (periodNumber == arrPeriods.size() - 1 &&
+                    period.getEndTimestamp() < period.getStartTimestamp() + timestampNumber * period.getSecondsPerPoint())
                 return false;
 
             return true;
@@ -132,7 +131,7 @@ public class Periods implements Iterable<Integer> {
 
         public final Integer next() {
             Period period = arrPeriods.get(periodNumber);
-            if(period.getEndTimestamp() < timestampNumber * period.getSecondsPerPoint()){
+            if(period.getEndTimestamp() <  period.getStartTimestamp() + timestampNumber * period.getSecondsPerPoint()){
                 periodNumber++;
                 timestampNumber = 0;
             }

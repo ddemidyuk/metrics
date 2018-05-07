@@ -4,7 +4,7 @@ import com.example.metrics.interval.entities.Interval;
 
 import java.util.Arrays;
 
-class  ConstInterval implements Interval {
+class ConstInterval implements Interval {
     private final int startTimestamp;
     private final int endTimestamp;
     private final int secondsPerPoint;
@@ -22,7 +22,7 @@ class  ConstInterval implements Interval {
     }
 
     public double[] getValues() {
-        double[] values = new double[(startTimestamp - endTimestamp) / secondsPerPoint];
+        double[] values = new double[(startTimestamp - endTimestamp) / secondsPerPoint + 1];
         Arrays.fill(values, value);
         return values;
     }
@@ -69,6 +69,7 @@ class  ConstInterval implements Interval {
             this.value = value;
             return this;
         }
+
         public Builder secondsPerPoint(int secondsPerPoint) {
             this.secondsPerPoint = secondsPerPoint;
             return this;

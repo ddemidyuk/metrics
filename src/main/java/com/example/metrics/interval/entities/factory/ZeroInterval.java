@@ -21,7 +21,7 @@ class ZeroInterval implements Interval {
     }
 
     public double[] getValues() {
-        double[] values = new double[(startTimestamp - endTimestamp) / secondsPerPoint];
+        double[] values = new double[(startTimestamp - endTimestamp) / secondsPerPoint +1];
         Arrays.fill(values, VALUE);
         return values;
     }

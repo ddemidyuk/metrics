@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 @Service
 public class MainServiceImpl implements MainService {
 
+    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy hh:mm");
     private WspReader wspReader;
 
     private AppProperties appProperties;
@@ -49,25 +50,26 @@ public class MainServiceImpl implements MainService {
         createMetricCsv(csvPath);
         Metrics metrics = getMetrics();
         List<Double> values = new ArrayList<>(metrics.get().size());
-        for (int timestamp : metrics.getPeriods()) {
-            for (Metric metric : metrics) {
-                values.add(metric.getValue(timestamp));
+        try (PrintWriter csvFile = new PrintWriter(csvPath.toFile())) {
+            CSVPrinter csvPrinter = new CSVPrinter(csvFile, CSVFormat.DEFAULT);
+            for (int timestamp : metrics.getPeriods()) {
+                for (Metric metric : metrics) {
+                    values.add(metric.getValue(timestamp));
+                }
+                saveToCsv(csvPrinter, timestamp, values);
+                values.clear();
             }
-            saveToCsv(csvPath,timestamp, values);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    private void saveToCsv(Path csvPath, int timestamp, List<Double> values) {
-        try (PrintWriter csvFile = new PrintWriter(csvPath.toFile())) {
-            CSVPrinter csvPrinter = new CSVPrinter(csvFile, CSVFormat.DEFAULT);
-            csvPrinter.print(new SimpleDateFormat("dd.MM.yyyy hh:mm").format(new Date(timestamp * 1000L)));
+    private void saveToCsv(CSVPrinter csvPrinter, int timestamp, List<Double> values) throws IOException {
+            csvPrinter.print(DATE_FORMAT.format(new Date(timestamp * 1000L)));
             for (Double value : values) {
                 csvPrinter.print(value);
             }
             csvPrinter.println();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     private void createMetricCsv(Path path) {
@@ -158,6 +160,11 @@ public class MainServiceImpl implements MainService {
             factoryParam.addValue(datapoint.getValue());
             priorTimestamp = timestamp;
             isFirstStep = false;
+        }
+        //todo remove it
+        if(factoryParam.getValues().length > 0 ){
+            Interval interval = intervalFactory.createInterval(factoryParam);
+            intervals.add(interval);
         }
         return new Metric(series.getId(), intervals);
     }

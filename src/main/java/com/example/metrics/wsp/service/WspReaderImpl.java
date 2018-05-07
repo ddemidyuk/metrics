@@ -54,11 +54,9 @@ public class WspReaderImpl implements WspReader {
 
         do {
             int timestamp = buf.getInt();
-            if (filter.getTimestampPredicate().negate().test(timestamp)) continue;
-
             double value = buf.getDouble();
+            if (filter.getTimestampPredicate().negate().test(timestamp)) continue;
             if (filter.getValuePredicate().negate().test(value)) continue;
-
             Datapoint datapoint = new Datapoint(timestamp, value);
             archive.addDatapoint(datapoint);
         } while (buf.hasRemaining());

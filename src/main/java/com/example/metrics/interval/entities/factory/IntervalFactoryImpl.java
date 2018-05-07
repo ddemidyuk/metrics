@@ -25,6 +25,7 @@ public class IntervalFactoryImpl implements IntervalFactory {
 
         return SimpleInterval.Builder.newInstance()
                 .startTimestamp(param.getStartTimestamp())
+                .endTimestamp(param.getEndTimestamp())
                 .secondsPerPoint(param.getSecondsPerPoint())
                 .values(param.getValues())
                 .build();
