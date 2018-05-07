@@ -1,6 +1,7 @@
 package com.example.metrics.interval.entities.factory;
 
 import com.example.metrics.interval.entities.Interval;
+import com.example.metrics.interval.entities.StorableInterval;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -23,11 +24,14 @@ public class IntervalFactoryImpl implements IntervalFactory {
                     .build();
         }
 
-        return SimpleInterval.Builder.newInstance()
+        StorableInterval storableInterval = SimpleInterval.Builder.newInstance()
                 .startTimestamp(param.getStartTimestamp())
                 .endTimestamp(param.getEndTimestamp())
                 .secondsPerPoint(param.getSecondsPerPoint())
                 .values(param.getValues())
                 .build();
+
+        storableInterval.storeValues("c:\\temp\\tmp\\");
+        return storableInterval;
     }
 }

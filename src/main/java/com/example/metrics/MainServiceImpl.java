@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class MainServiceImpl implements MainService {
@@ -46,7 +45,7 @@ public class MainServiceImpl implements MainService {
     }
 
     public void doIt() {
-        Path csvPath = Paths.get(appProperties.getOutputCsvPath(), "AggrMetrics.csv");
+        Path csvPath = Paths.get(appProperties.getOutputCsvPath());
         createMetricCsv(csvPath);
         Metrics metrics = getMetrics();
         List<Double> values = new ArrayList<>(metrics.get().size());
@@ -113,23 +112,6 @@ public class MainServiceImpl implements MainService {
                 .forEach(metric -> metrics.addMetric(metric));
 
         return metrics;
-    }
-
-    public List<Series> getSeries() {
-        Filter filter = Filter.Builder.newInstance()
-                .timestampPredicate(Filter.SKIP_ZERO_INT_PREDICATE)
-                .secondsPerPointPredicate(s -> s == appProperties.getSecondsPerPoint())
-                //.datapointComparator(Filter.ASC_DATAPOINT_COMPARATOR)
-                .build();
-
-        return appProperties.getMetricIds().stream()
-                .map(metricId -> Params.Builder.newInstance()
-                        .seriesId(metricId)
-                        .rootPath(appProperties.getInputDataRootPath())
-                        .filter(filter)
-                        .build())
-                .map(wspReader::getSeriesByWspFilePath)
-                .collect(Collectors.toList());
     }
 
     //todo refactor this
