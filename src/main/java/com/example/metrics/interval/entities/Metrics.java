@@ -13,7 +13,7 @@ public class Metrics implements Iterable<Metric>{
     public void addMetric(Metric metric) {
         metrics.add(metric);
         periods.unitePeriods(metric.getIntervals().stream()
-                .map(interval -> interval.getPeriod())
+                .map(Interval::getPeriod)
                 .collect(Collectors.toList())
         );
     }

@@ -1,6 +1,6 @@
 package com.example.metrics.interval.entities.factory;
 
-import com.example.metrics.interval.entities.StorableInterval;
+import com.example.metrics.interval.entities.AbstractInterval;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -11,30 +11,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-class SimpleInterval implements StorableInterval {
+class SimpleInterval extends AbstractInterval {
     private static long nextUid = 0;
     private final long uid;
-
-    private final int startTimestamp;
-    private final int endTimestamp;
     private double[] values;
-    private final int secondsPerPoint;
 
     private boolean isStored;
     private Path filePath;
     private int valuesSize;
 
     private SimpleInterval(Builder builder) {
+        super(builder);
         uid = nextUid++;
-        this.startTimestamp = builder.startTimestamp;
-        this.endTimestamp = builder.endTimestamp;
         this.values = builder.values;
-        this.secondsPerPoint = builder.secondsPerPoint;
         isStored = false;
-    }
-
-    public int getStartTimestamp() {
-        return startTimestamp;
     }
 
     synchronized
@@ -45,19 +35,11 @@ class SimpleInterval implements StorableInterval {
 
     synchronized
     public Double getValue(int timestamp) {
-        if (timestamp < startTimestamp || timestamp > getEndTimestamp()) {
-            return null;
+        if (isContainsTimestamp(timestamp)) {
+            if (isStored) restoreValues();
+            return values[getTimestampPositionInPeriod(timestamp)];
         }
-        if (isStored) restoreValues();
-        return values[(timestamp - startTimestamp) / secondsPerPoint];
-    }
-
-    public int getSecondsPerPoint() {
-        return secondsPerPoint;
-    }
-
-    public int getEndTimestamp() {
-        return endTimestamp;
+        return null;
     }
 
     synchronized
@@ -92,11 +74,8 @@ class SimpleInterval implements StorableInterval {
         isStored = false;
     }
 
-    public static final class Builder {
-        private int startTimestamp;
-        private int endTimestamp;
+    public static final class Builder extends AbstractInterval.AbstractIntervalBuilder<Builder> {
         private double[] values;
-        private int secondsPerPoint;
 
         private Builder() {
         }
@@ -105,28 +84,18 @@ class SimpleInterval implements StorableInterval {
             return new Builder();
         }
 
-        public Builder startTimestamp(int startTimestamp) {
-            this.startTimestamp = startTimestamp;
-            return this;
-        }
-
         public Builder values(double[] values) {
             this.values = values;
             return this;
         }
 
-        public Builder secondsPerPoint(int secondsPerPoint) {
-            this.secondsPerPoint = secondsPerPoint;
-            return this;
-        }
-
-        public Builder endTimestamp(int endTimestamp) {
-            this.endTimestamp = endTimestamp;
-            return this;
-        }
-
         public SimpleInterval build() {
             return new SimpleInterval(this);
+        }
+
+        @Override
+        protected Builder getThis() {
+            return this;
         }
     }
 }
