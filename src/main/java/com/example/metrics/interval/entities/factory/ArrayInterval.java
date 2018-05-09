@@ -1,6 +1,7 @@
 package com.example.metrics.interval.entities.factory;
 
 import com.example.metrics.interval.entities.AbstractInterval;
+import com.example.metrics.interval.entities.AbstractStorableInterval;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -11,7 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-class SimpleInterval extends AbstractInterval {
+class ArrayInterval extends AbstractStorableInterval {
     private static long nextUid = 0;
     private final long uid;
     private double[] values;
@@ -20,7 +21,7 @@ class SimpleInterval extends AbstractInterval {
     private Path filePath;
     private int valuesSize;
 
-    private SimpleInterval(Builder builder) {
+    private ArrayInterval(Builder builder) {
         super(builder);
         uid = nextUid++;
         this.values = builder.values;
@@ -89,8 +90,8 @@ class SimpleInterval extends AbstractInterval {
             return this;
         }
 
-        public SimpleInterval build() {
-            return new SimpleInterval(this);
+        public ArrayInterval build() {
+            return new ArrayInterval(this);
         }
 
         @Override

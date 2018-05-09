@@ -27,18 +27,6 @@ public abstract class AbstractInterval implements Interval {
         return period;
     }
 
-    public int getStartTimestamp() {
-        return period.getStartTimestamp();
-    }
-
-    public int getSecondsPerPoint() {
-        return period.getSecondsPerPoint();
-    }
-
-    public int getEndTimestamp() {
-        return period.getEndTimestamp();
-    }
-
     public static  abstract class  AbstractIntervalBuilder<T extends AbstractIntervalBuilder<T>> {
         private int startTimestamp;
         private int endTimestamp;

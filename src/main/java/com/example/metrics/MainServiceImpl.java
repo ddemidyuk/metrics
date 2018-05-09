@@ -5,6 +5,7 @@ import com.example.metrics.interval.entities.Metric;
 import com.example.metrics.interval.entities.Metrics;
 import com.example.metrics.interval.entities.factory.IntervalFactory;
 import com.example.metrics.interval.entities.factory.IntervalFactoryParam;
+import com.example.metrics.interval.entities.factory.UsualIntervalFactoryParam;
 import com.example.metrics.wsp.entities.Archive;
 import com.example.metrics.wsp.entities.Datapoint;
 import com.example.metrics.wsp.entities.Series;
@@ -122,7 +123,7 @@ public class MainServiceImpl implements MainService {
 
 
         List<Interval> intervals = new ArrayList<>();
-        IntervalFactoryParam factoryParam = IntervalFactoryParam.Builder.newInstance()
+        IntervalFactoryParam factoryParam = UsualIntervalFactoryParam.Builder.newInstance()
                 .startTimestamp(datapoints.iterator().next().getTimestamp())
                 .secondsPerPoint(secondsPerPoint)
                 .bufferSize(datapoints.size())
@@ -135,8 +136,8 @@ public class MainServiceImpl implements MainService {
         for (Datapoint datapoint : datapoints) {
             timestamp = datapoint.getTimestamp();
             if (!isFirstStep && (timestamp - priorTimestamp != secondsPerPoint)) {
-                Interval interval = intervalFactory.createInterval(factoryParam);
-                intervals.add(interval);
+                Interval newInterval = intervalFactory.createInterval(factoryParam);
+                intervals.add(newInterval);
                 factoryParam.reset(timestamp);
             }
             factoryParam.addValue(datapoint.getValue());
@@ -145,8 +146,8 @@ public class MainServiceImpl implements MainService {
         }
         //todo remove it
         if(factoryParam.getValues().length > 0 ){
-            Interval interval = intervalFactory.createInterval(factoryParam);
-            intervals.add(interval);
+            Interval newInterval = intervalFactory.createInterval(factoryParam);
+            intervals.add(newInterval);
         }
         return new Metric(series.getId(), intervals);
     }

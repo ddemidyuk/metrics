@@ -22,4 +22,24 @@ public class Period {
     public int getSecondsPerPoint() {
         return secondsPerPoint;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Period period = (Period) o;
+        return startTimestamp == period.startTimestamp &&
+                endTimestamp == period.endTimestamp &&
+                secondsPerPoint == period.secondsPerPoint;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + startTimestamp;
+        result = prime * result + endTimestamp;
+        result = prime * result + secondsPerPoint;
+        return result;
+    }
 }
