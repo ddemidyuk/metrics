@@ -2,7 +2,10 @@ package com.example.metrics.interval.entities.factory;
 
 import com.example.metrics.interval.entities.Period;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.function.BiFunction;
 
 public class UsualIntervalFactoryParam implements IntervalFactoryParam {
     private int startTimestamp;
@@ -11,10 +14,14 @@ public class UsualIntervalFactoryParam implements IntervalFactoryParam {
     private int secondsPerPoint;
     private boolean allValuesAreTheSame;
     private PeriodsWithTheSameValuesCreator periodsWithTheSameValuesCreator;
+    private String metricId;
+    private BiFunction<String, Period, double[]> functionForRestoreFromDb;
 
     public UsualIntervalFactoryParam(Builder builder) {
         this.buffer = new double[builder.bufferSize];
         this.secondsPerPoint = builder.secondsPerPoint;
+        this.metricId = builder.metricId;
+        this.functionForRestoreFromDb = builder.functionForRestoreFromDb;
         reset(builder.startTimestamp);
     }
 
@@ -60,12 +67,22 @@ public class UsualIntervalFactoryParam implements IntervalFactoryParam {
         return periodsWithTheSameValuesCreator.periodsWithTheSameValues;
     }
 
+    @Override
+    public BiFunction<String, Period, double[]> getFunctionForRestoreFromDb() {
+        return functionForRestoreFromDb;
+    }
+
+    public String getMetricId() {
+        return metricId;
+    }
+
 
     private class PeriodsWithTheSameValuesCreator {
         private static final int MIN_COUNT_OF_THE_SAME_VALUE_TO_COMBINE_IN_SUBINTERVAL = 10;
         private Set<Period> periodsWithTheSameValues = new LinkedHashSet<>();
         private int countTheSameValues = 0;
         private int nextStartTimestamp;
+        private BiFunction<String, Period, double[]> functionForRestoreFromDb;
 
         public PeriodsWithTheSameValuesCreator(int nextStartTimestamp) {
             this.nextStartTimestamp = nextStartTimestamp;
@@ -89,6 +106,8 @@ public class UsualIntervalFactoryParam implements IntervalFactoryParam {
         private int startTimestamp;
         private int secondsPerPoint;
         private int bufferSize;
+        private String metricId;
+        BiFunction<String, Period, double[]> functionForRestoreFromDb;
 
         private Builder() {
         }
@@ -109,6 +128,14 @@ public class UsualIntervalFactoryParam implements IntervalFactoryParam {
 
         public Builder bufferSize(int bufferSize) {
             this.bufferSize = bufferSize;
+            return this;
+        }
+        public Builder metricId(String metricId) {
+            this.metricId = metricId;
+            return this;
+        }
+        public Builder functionForRestoreFromDb(BiFunction<String, Period, double[]> functionForRestoreFromDb) {
+            this.functionForRestoreFromDb = functionForRestoreFromDb;
             return this;
         }
 

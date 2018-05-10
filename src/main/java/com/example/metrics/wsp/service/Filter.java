@@ -7,7 +7,7 @@ import java.util.function.DoublePredicate;
 import java.util.function.IntPredicate;
 
 public class Filter {
-    private final IntPredicate timestampPredicate;
+    private IntPredicate timestampPredicate;
     private final DoublePredicate valuePredicate;
     private final IntPredicate secondsPerPointPredicate;
     private final Comparator<Datapoint> datapointComparator;
@@ -27,7 +27,11 @@ public class Filter {
         this.secondsPerPointPredicate = builder.secondsPerPointPredicate != null ? builder.secondsPerPointPredicate : ALWAYS_TRUE_INT_PREDICATE;
         this.datapointComparator = builder.datapointComparator;
     }
-    
+
+    public void setTimestampPredicate(IntPredicate timestampPredicate) {
+        this.timestampPredicate = timestampPredicate;
+    }
+
     public IntPredicate getTimestampPredicate() {
         return timestampPredicate;
     }

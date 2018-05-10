@@ -7,6 +7,7 @@ import com.example.metrics.interval.entities.StorableInterval;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.function.BiFunction;
 
 @Component
 public class UsualIntervalFactory implements IntervalFactory {
@@ -42,13 +43,16 @@ public class UsualIntervalFactory implements IntervalFactory {
         }
 
         StorableInterval storableInterval = ArrayInterval.Builder.newInstance()
+                .metricId(param.getMetricId())
+                .functionForRestoreFromDb(param.getFunctionForRestoreFromDb())
                 .startTimestamp(param.getStartTimestamp())
                 .endTimestamp(param.getEndTimestamp())
                 .secondsPerPoint(param.getSecondsPerPoint())
                 .values(param.getValues())
                 .build();
 
-        storableInterval.storeValues("c:\\temp\\tmp\\");//todo
+        //storableInterval.storeValues("c:\\temp\\tmp\\");//todo
+        //storableInterval.restoreValues();
         return storableInterval;
     }
 
@@ -90,7 +94,7 @@ public class UsualIntervalFactory implements IntervalFactory {
             int endIndex = (period.getEndTimestamp() - param.getStartTimestamp()) / param.getSecondsPerPoint();
             double[] newValues = Arrays.copyOfRange(values, startIndex, endIndex + 1);
             boolean isAllValuesAreTheSame = periodsWithTheSameValues.contains(period);
-            IntervalFactoryParam fragParam = createNewParam(period, newValues, true);
+            IntervalFactoryParam fragParam = createNewParam(period, newValues, true, param);
             fragParams.add(fragParam);
         }
 
@@ -98,8 +102,13 @@ public class UsualIntervalFactory implements IntervalFactory {
         return fragParams;
     }
 
-    private IntervalFactoryParam createNewParam(Period period, double[] values, boolean isAllValuesAreTheSame) {
+    private IntervalFactoryParam createNewParam(Period period, double[] values, boolean isAllValuesAreTheSame, IntervalFactoryParam param) {
         return new IntervalFactoryParam() {
+            @Override
+            public String getMetricId() {
+                return param.getMetricId();
+            }
+
             @Override
             public void addValue(double value) {
                 throw new UnsupportedOperationException();
@@ -137,7 +146,12 @@ public class UsualIntervalFactory implements IntervalFactory {
 
             @Override
             public Set<Period> getPeriodsWithTheSameValues() {
-                throw new UnsupportedOperationException();
+                return Collections.EMPTY_SET;
+            }
+
+            @Override
+            public BiFunction<String, Period, double[]> getFunctionForRestoreFromDb() {
+                return param.getFunctionForRestoreFromDb();
             }
         };
     }

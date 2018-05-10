@@ -3,6 +3,7 @@ package com.example.metrics;
 import com.example.metrics.interval.entities.Interval;
 import com.example.metrics.interval.entities.Metric;
 import com.example.metrics.interval.entities.Metrics;
+import com.example.metrics.interval.entities.Period;
 import com.example.metrics.interval.entities.factory.IntervalFactory;
 import com.example.metrics.interval.entities.factory.IntervalFactoryParam;
 import com.example.metrics.interval.entities.factory.UsualIntervalFactoryParam;
@@ -23,10 +24,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Stream;
 
 @Service
 public class MainServiceImpl implements MainService {
@@ -52,6 +51,8 @@ public class MainServiceImpl implements MainService {
         List<Double> values = new ArrayList<>(metrics.get().size());
         try (PrintWriter csvFile = new PrintWriter(csvPath.toFile())) {
             CSVPrinter csvPrinter = new CSVPrinter(csvFile, CSVFormat.DEFAULT);
+            csvPrinter.print("timestamp");
+            csvPrinter.printRecord(appProperties.getMetricIds());
             for (int timestamp : metrics.getPeriods()) {
                 for (Metric metric : metrics) {
                     values.add(metric.getValue(timestamp));
@@ -65,11 +66,11 @@ public class MainServiceImpl implements MainService {
     }
 
     private void saveToCsv(CSVPrinter csvPrinter, int timestamp, List<Double> values) throws IOException {
-            csvPrinter.print(DATE_FORMAT.format(new Date(timestamp * 1000L)));
-            for (Double value : values) {
-                csvPrinter.print(value);
-            }
-            csvPrinter.println();
+        csvPrinter.print(DATE_FORMAT.format(new Date(timestamp * 1000L)));
+        for (Double value : values) {
+            csvPrinter.print(value);
+        }
+        csvPrinter.println();
     }
 
     private void createMetricCsv(Path path) {
@@ -94,25 +95,56 @@ public class MainServiceImpl implements MainService {
 
 
     private Metrics getMetrics() {
-        Filter filter = Filter.Builder.newInstance()
-                .timestampPredicate(Filter.SKIP_ZERO_INT_PREDICATE)
-                .secondsPerPointPredicate(s -> s == appProperties.getSecondsPerPoint())
-                .datapointComparator(Filter.ASC_DATAPOINT_COMPARATOR)
-                .build();
 
         Metrics metrics = new Metrics();
 
-        appProperties.getMetricIds().stream()
-                .map(metricId -> Params.Builder.newInstance()
-                        .seriesId(metricId)
-                        .rootPath(appProperties.getInputDataRootPath())
-                        .filter(filter)
-                        .build())
-                .map(wspReader::getSeriesByWspFilePath)
+        getSeriesByByMetricsIds(appProperties.getMetricIds(), getFilter())
                 .map(this::getMetricFromFirstArchiveOfSeries)
                 .forEach(metric -> metrics.addMetric(metric));
 
         return metrics;
+    }
+
+    private Filter getFilter() {
+        return Filter.Builder.newInstance()
+                .timestampPredicate(Filter.SKIP_ZERO_INT_PREDICATE)
+                .secondsPerPointPredicate(s -> s == appProperties.getSecondsPerPoint())
+                .datapointComparator(Filter.ASC_DATAPOINT_COMPARATOR)
+                .build();
+    }
+
+    private Stream<Series> getSeriesByByMetricsIds(List<String> metricIds, Filter filter) {
+        return metricIds.stream()
+                .map(metricId -> getParamsByMetricsId(metricId, filter))
+                .map(wspReader::getSeriesByWspFilePath);
+    }
+
+    private Params getParamsByMetricsId(String metricId, Filter filter){
+        return Params.Builder.newInstance()
+                .seriesId(metricId)
+                .rootPath(appProperties.getInputDataRootPath())
+                .filter(filter)
+                .build();
+    }
+
+    private double[] getValueByPeriod(String metricId, Period period) {
+        Filter filter = getFilter();
+        filter.setTimestampPredicate(
+                filter.getTimestampPredicate()
+                .and(i -> i >= period.getStartTimestamp())
+                .and(i -> i <= period.getEndTimestamp())
+        );
+
+        Params params = getParamsByMetricsId(metricId, filter);
+        Series series = wspReader.getSeriesByWspFilePath(params);
+        Archive archive = series.getArchives().get(0);
+        Set<Datapoint> datapoints = archive.getDatapoints();
+        double[] values = new double[datapoints.size()];
+        int i = 0;
+        for(Datapoint datapoint : datapoints){
+            values[i++]=datapoint.getValue();
+        }
+        return values;
     }
 
     //todo refactor this
@@ -121,12 +153,13 @@ public class MainServiceImpl implements MainService {
         int secondsPerPoint = archive.getArchiveInfo().getSecondsPerPoint();
         Set<Datapoint> datapoints = archive.getDatapoints();
 
-
         List<Interval> intervals = new ArrayList<>();
         IntervalFactoryParam factoryParam = UsualIntervalFactoryParam.Builder.newInstance()
+                .metricId(series.getId())
                 .startTimestamp(datapoints.iterator().next().getTimestamp())
                 .secondsPerPoint(secondsPerPoint)
                 .bufferSize(datapoints.size())
+                .functionForRestoreFromDb(this::getValueByPeriod)
                 .build();
 
         int priorTimestamp = 0;//todo
@@ -145,7 +178,7 @@ public class MainServiceImpl implements MainService {
             isFirstStep = false;
         }
         //todo remove it
-        if(factoryParam.getValues().length > 0 ){
+        if (factoryParam.getValues().length > 0) {
             Interval newInterval = intervalFactory.createInterval(factoryParam);
             intervals.add(newInterval);
         }

@@ -2,6 +2,7 @@ package com.example.metrics.interval.entities.factory;
 
 import com.example.metrics.interval.entities.AbstractInterval;
 import com.example.metrics.interval.entities.AbstractStorableInterval;
+import com.example.metrics.interval.entities.Period;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -11,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.function.BiFunction;
 
 class ArrayInterval extends AbstractStorableInterval {
     private static long nextUid = 0;
@@ -25,6 +27,8 @@ class ArrayInterval extends AbstractStorableInterval {
         super(builder);
         uid = nextUid++;
         this.values = builder.values;
+        this.metricId = builder.metricId;
+        this.functionForRestoreFromDb = builder.functionForRestoreFromDb;
         isStored = false;
     }
 
@@ -62,6 +66,16 @@ class ArrayInterval extends AbstractStorableInterval {
 
     synchronized
     public void restoreValues() {
+        if (Files.exists(filePath)) {
+            restoreValuesFromTmpFolder();
+        } else {
+            restoreValuesFromDb();
+        }
+        isStored = false;
+    }
+
+    synchronized
+    private void restoreValuesFromTmpFolder() {
         try (ReadableByteChannel byteChannel = Files.newByteChannel(filePath)) {
             ByteBuffer buf = ByteBuffer.allocate(valuesSize * Double.BYTES);
             byteChannel.read(buf);
@@ -72,11 +86,19 @@ class ArrayInterval extends AbstractStorableInterval {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        isStored = false;
+
     }
+
+    synchronized
+    private void restoreValuesFromDb() {
+        values = functionForRestoreFromDb.apply(metricId, getPeriod());
+    }
+
 
     public static final class Builder extends AbstractInterval.AbstractIntervalBuilder<Builder> {
         private double[] values;
+        private String metricId;
+        private BiFunction<String, Period, double[]> functionForRestoreFromDb;
 
         private Builder() {
         }
@@ -87,6 +109,16 @@ class ArrayInterval extends AbstractStorableInterval {
 
         public Builder values(double[] values) {
             this.values = values;
+            return this;
+        }
+
+        public Builder metricId(String metricId) {
+            this.metricId = metricId;
+            return this;
+        }
+
+        public Builder functionForRestoreFromDb(BiFunction<String, Period, double[]> functionForRestoreFromDb) {
+            this.functionForRestoreFromDb = functionForRestoreFromDb;
             return this;
         }
 
