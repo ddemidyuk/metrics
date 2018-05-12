@@ -1,5 +1,6 @@
 package com.example.metrics;
 
+import com.example.metrics.csv.CsvWriteQueue;
 import com.example.metrics.interval.entities.Interval;
 import com.example.metrics.interval.entities.Metric;
 import com.example.metrics.interval.entities.Metrics;
@@ -13,20 +14,16 @@ import com.example.metrics.wsp.entities.Series;
 import com.example.metrics.wsp.service.Filter;
 import com.example.metrics.wsp.service.Params;
 import com.example.metrics.wsp.service.WspReader;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,73 +34,48 @@ public class MainServiceImpl implements MainService {
 
     private static final String DATABASE_FILE_EXTENSION = ".wsp";
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy hh:mm");
+    public static final String TIMESTAMP = "timestamp";
     private WspReader wspReader;
-
     private AppProperties appProperties;
-
     private IntervalFactory intervalFactory;
+    private CsvWriteQueue csvWriteQueue;
 
     @Autowired
-    public MainServiceImpl(WspReader wspReader, AppProperties appProperties, IntervalFactory intervalFactory) {
+    public MainServiceImpl(WspReader wspReader, AppProperties appProperties, IntervalFactory intervalFactory, CsvWriteQueue csvWriteQueue) {
         this.wspReader = wspReader;
         this.appProperties = appProperties;
         this.intervalFactory = intervalFactory;
+        this.csvWriteQueue = csvWriteQueue;
     }
 
     public void doIt() {
-        Path csvPath = Paths.get(appProperties.getOutputCsvPath());
-        createMetricCsv(csvPath);
         Metrics metrics = getMetrics();
         List<Double> values = new ArrayList<>(metrics.get().size());
-        try (PrintWriter csvFile = new PrintWriter(csvPath.toFile())) {
-            CSVPrinter csvPrinter = new CSVPrinter(csvFile, CSVFormat.DEFAULT);
-            csvPrinter.print("timestamp");
-            csvPrinter.printRecord(appProperties.getMetricIds());
-            for (int timestamp : metrics.getPeriods()) {
-                for (Metric metric : metrics) {
-                    values.add(metric.getValue(timestamp));
-                }
-                saveToCsv(csvPrinter, timestamp, values);
-                values.clear();
+
+        List<Object> csvRecord = new ArrayList<>(metrics.get().size() + 1);
+        csvRecord.add(TIMESTAMP);
+        csvRecord.addAll(getPathsOfWspFiles()
+                .stream()
+                .map(this::getMetricIdByPath)
+                .collect(Collectors.toList())
+        );
+        csvWriteQueue.offer(csvRecord);
+
+        for (int timestamp : metrics.getPeriods()) {
+            for (Metric metric : metrics) {
+                values.add(metric.getValue(timestamp));
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+            csvRecord = new ArrayList<>(metrics.get().size() + 1);
+            csvRecord.add(timestamp);
+            csvRecord.addAll(values);
+            csvWriteQueue.offer(csvRecord);
+            values.clear();
         }
+
     }
-
-    private void saveToCsv(CSVPrinter csvPrinter, int timestamp, List<Double> values) throws IOException {
-        csvPrinter.print(DATE_FORMAT.format(new Date(timestamp * 1000L)));
-        for (Double value : values) {
-            csvPrinter.print(value);
-        }
-        csvPrinter.println();
-    }
-
-    private void createMetricCsv(Path path) {
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try (PrintWriter csvFile = new PrintWriter(Files.createFile(path).toFile())) {
-            CSVPrinter csvPrinter = new CSVPrinter(csvFile, CSVFormat.DEFAULT);
-            csvPrinter.print("timestamp");
-
-         /*   for (String metricId : metricIds) {
-                csvPrinter.print(metricId);
-            }*/
-
-            csvPrinter.println();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
 
     private Metrics getMetrics() {
-
         Metrics metrics = new Metrics();
-
         getSeriesByByMetricsIds(getPathsOfWspFiles(), getFilter())
                 .map(this::getMetricFromFirstArchiveOfSeries)
                 .forEach(metric -> metrics.addMetric(metric));
