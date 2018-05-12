@@ -1,6 +1,5 @@
 package com.example.metrics.interval.entities.factory;
 
-import com.example.metrics.interval.entities.AbstractInterval;
 import com.example.metrics.interval.entities.AbstractStorableInterval;
 import com.example.metrics.interval.entities.Period;
 
@@ -14,12 +13,13 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.function.BiFunction;
 
-class ArrayInterval extends AbstractStorableInterval {
+public class ArrayInterval extends AbstractStorableInterval {
+    public static final String STORAGE_FILE_PREFIX = "ArrayInterval_";
     private static long nextUid = 0;
     private final long uid;
     private double[] values;
 
-    private boolean isStored;
+    public boolean isStored;
     private Path filePath;
     private int valuesSize;
 
@@ -27,21 +27,31 @@ class ArrayInterval extends AbstractStorableInterval {
         super(builder);
         uid = nextUid++;
         this.values = builder.values;
-        this.metricId = builder.metricId;
-        this.functionForRestoreFromDb = builder.functionForRestoreFromDb;
         isStored = false;
     }
 
     synchronized
     public double[] getValues() {
-        if (isStored) restoreValues();
+        while (isStored) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         return values;
     }
 
     synchronized
     public Double getValue(int timestamp) {
         if (isContainsTimestamp(timestamp)) {
-            if (isStored) restoreValues();
+            while (isStored) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
             return values[getTimestampPositionInPeriod(timestamp)];
         }
         return null;
@@ -50,7 +60,7 @@ class ArrayInterval extends AbstractStorableInterval {
     synchronized
     public void storeValues(String folderPath) {
         valuesSize = values.length;
-        filePath = Paths.get(folderPath, "SimpleInterval_" + uid);
+        filePath = Paths.get(folderPath, STORAGE_FILE_PREFIX + uid);
         try (WritableByteChannel byteChannel = Files.newByteChannel(filePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
             ByteBuffer buf = ByteBuffer.allocate(valuesSize * Double.BYTES);
             buf.asDoubleBuffer().put(values);
@@ -66,12 +76,16 @@ class ArrayInterval extends AbstractStorableInterval {
 
     synchronized
     public void restoreValues() {
+        if(!isStored){
+            return;
+        }
         if (Files.exists(filePath)) {
             restoreValuesFromTmpFolder();
         } else {
             restoreValuesFromDb();
         }
         isStored = false;
+        notifyAll();
     }
 
     synchronized
@@ -95,7 +109,7 @@ class ArrayInterval extends AbstractStorableInterval {
     }
 
 
-    public static final class Builder extends AbstractInterval.AbstractIntervalBuilder<Builder> {
+    public static final class Builder extends AbstractStorableInterval.AbstractIntervalBuilder<Builder> {
         private double[] values;
         private String metricId;
         private BiFunction<String, Period, double[]> functionForRestoreFromDb;

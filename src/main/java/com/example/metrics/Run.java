@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.Duration;
 
 @Component
 public class Run {
@@ -12,16 +13,12 @@ public class Run {
     MainService mainService;
 
     public void start(String... args) throws IOException {
+        long startTime = System.currentTimeMillis();
+
         mainService.doIt();
 
-       // List<Metric> seriesList = intervalService.get();
-        /*List<Series> seriesList = intervalService.getSeries();
-        createMetricCsv(csvPath, seriesIds);
-        saveToCsv(csvPath, seriesList.get(0).getArchives().get(0).getDatapoints());
-        createMetricCsv(Paths.get("C:\\TEMP\\metrics1.csv"), seriesIds);
-        saveToCsv(Paths.get("C:\\TEMP\\metrics1.csv"), seriesList.get(1).getArchives().get(0).getDatapoints());
-        createMetricCsv(Paths.get("C:\\TEMP\\metrics2.csv"), seriesIds);
-        saveToCsv(Paths.get("C:\\TEMP\\metrics2.csv"), seriesList.get(2).getArchives().get(0).getDatapoints());*/
-
+        long endTime = System.currentTimeMillis();
+        Duration duration = Duration.ofMillis(endTime - startTime);
+        System.out.println("Completed in " + duration.toString());
     }
 }

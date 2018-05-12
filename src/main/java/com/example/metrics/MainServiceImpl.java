@@ -18,19 +18,25 @@ import org.apache.commons.csv.CSVPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
 public class MainServiceImpl implements MainService {
 
-    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy hh:mm");
+    private static final String DATABASE_FILE_EXTENSION = ".wsp";
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy hh:mm");
     private WspReader wspReader;
 
     private AppProperties appProperties;
@@ -98,12 +104,36 @@ public class MainServiceImpl implements MainService {
 
         Metrics metrics = new Metrics();
 
-        getSeriesByByMetricsIds(appProperties.getMetricIds(), getFilter())
+        getSeriesByByMetricsIds(getPathsOfWspFiles(), getFilter())
                 .map(this::getMetricFromFirstArchiveOfSeries)
                 .forEach(metric -> metrics.addMetric(metric));
 
         return metrics;
     }
+
+    private List<Path> getPathsOfWspFiles() {
+        List<Path> metricsIds = new ArrayList<>();
+        String rootPath = appProperties.getInputDataRootPath();
+        for (String metricId : appProperties.getMetricIds()) {
+            Path path = Paths.get(rootPath + metricId);
+            File file = path.toFile();
+            if (file.isDirectory()) {
+                try {
+                    List<Path> list = Files.walk(path)
+                            .filter(p -> p.toString().toLowerCase().endsWith(DATABASE_FILE_EXTENSION))
+                            .collect(Collectors.toList());
+
+                    metricsIds.addAll(list);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return metricsIds;
+    }
+
 
     private Filter getFilter() {
         return Filter.Builder.newInstance()
@@ -113,36 +143,40 @@ public class MainServiceImpl implements MainService {
                 .build();
     }
 
-    private Stream<Series> getSeriesByByMetricsIds(List<String> metricIds, Filter filter) {
-        return metricIds.stream()
-                .map(metricId -> getParamsByMetricsId(metricId, filter))
+    private Stream<Series> getSeriesByByMetricsIds(List<Path> metricPaths, Filter filter) {
+        return metricPaths.stream()
+                .map(metricPath -> new Params(metricPath, getMetricIdByPath(metricPath), filter))
                 .map(wspReader::getSeriesByWspFilePath);
     }
 
-    private Params getParamsByMetricsId(String metricId, Filter filter){
-        return Params.Builder.newInstance()
-                .seriesId(metricId)
-                .rootPath(appProperties.getInputDataRootPath())
-                .filter(filter)
-                .build();
+    private String getMetricIdByPath(Path path) {
+        int rootPathLength = appProperties.getInputDataRootPath().length();
+        String strPath = path.toString();
+        return strPath.substring(rootPathLength, strPath.length() - DATABASE_FILE_EXTENSION.length())
+                ;
+    }
+
+    private Path getMetricPathById(String metricId) {
+        return Paths.get(appProperties.getInputDataRootPath() + metricId + DATABASE_FILE_EXTENSION);
+
     }
 
     private double[] getValueByPeriod(String metricId, Period period) {
         Filter filter = getFilter();
         filter.setTimestampPredicate(
                 filter.getTimestampPredicate()
-                .and(i -> i >= period.getStartTimestamp())
-                .and(i -> i <= period.getEndTimestamp())
+                        .and(i -> i >= period.getStartTimestamp())
+                        .and(i -> i <= period.getEndTimestamp())
         );
 
-        Params params = getParamsByMetricsId(metricId, filter);
+        Params params = new Params(getMetricPathById(metricId), metricId, filter);
         Series series = wspReader.getSeriesByWspFilePath(params);
         Archive archive = series.getArchives().get(0);
         Set<Datapoint> datapoints = archive.getDatapoints();
         double[] values = new double[datapoints.size()];
         int i = 0;
-        for(Datapoint datapoint : datapoints){
-            values[i++]=datapoint.getValue();
+        for (Datapoint datapoint : datapoints) {
+            values[i++] = datapoint.getValue();
         }
         return values;
     }

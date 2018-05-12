@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,15 +16,13 @@ public class WspReaderImpl implements WspReader {
     private static final int METADATA_SIZE_IN_BYTES = 16;
     private static final int ARCHIVE_INFO_SIZE_IN_BYTES = 12;
     private static final int DATAPOINT_SIZE_IN_BYTES = 12;
-    private static final String DATABASE_FILE_EXTENSION = ".wsp";
 
     public Series getSeriesByWspFilePath(Params params) {
         Series series = null;
-        Path path = Paths.get(params.getRootPath() + params.getSeriesId() + DATABASE_FILE_EXTENSION);
-        try (ReadableByteChannel byteChannel = Files.newByteChannel(path)) {
+        try (ReadableByteChannel byteChannel = Files.newByteChannel(params.getMetricPath())) {
             Header header = getHeader(byteChannel, params.getFilter());
             List<Archive> archives = getArchives(byteChannel, header.getArchiveInfos(), params.getFilter());
-            series = new Series(params.getSeriesId(), header, archives);
+            series = new Series(params.getMetricId(), header, archives);
         } catch (IOException e) {
             e.printStackTrace();
         }

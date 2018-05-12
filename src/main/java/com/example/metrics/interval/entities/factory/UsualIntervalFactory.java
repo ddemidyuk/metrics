@@ -43,16 +43,15 @@ public class UsualIntervalFactory implements IntervalFactory {
         }
 
         StorableInterval storableInterval = ArrayInterval.Builder.newInstance()
+                .values(param.getValues())
                 .metricId(param.getMetricId())
                 .functionForRestoreFromDb(param.getFunctionForRestoreFromDb())
                 .startTimestamp(param.getStartTimestamp())
                 .endTimestamp(param.getEndTimestamp())
                 .secondsPerPoint(param.getSecondsPerPoint())
-                .values(param.getValues())
                 .build();
 
-        //storableInterval.storeValues("c:\\temp\\tmp\\");//todo
-        //storableInterval.restoreValues();
+        storableInterval.storeValues("c:\\temp\\tmp\\");//todo
         return storableInterval;
     }
 
