@@ -1,9 +1,11 @@
 package com.example.metrics.interval.entities.factory;
 
 
+import com.example.metrics.AppProperties;
 import com.example.metrics.interval.entities.Interval;
 import com.example.metrics.interval.entities.Period;
 import com.example.metrics.interval.entities.StorableInterval;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -12,6 +14,9 @@ import java.util.function.BiFunction;
 @Component
 public class UsualIntervalFactory implements IntervalFactory {
 
+    @Autowired
+    private AppProperties appProperties;
+    
     public Interval createInterval(IntervalFactoryParam param) {
         if (param.isAllValuesAreTheSame()) {
             if (param.getValues()[0] == 0d) {
@@ -51,7 +56,7 @@ public class UsualIntervalFactory implements IntervalFactory {
                 .secondsPerPoint(param.getSecondsPerPoint())
                 .build();
 
-        storableInterval.storeValues("c:\\temp\\tmp\\");//todo
+        storableInterval.storeValues(appProperties.getTmpFolderPath());
         return storableInterval;
     }
 

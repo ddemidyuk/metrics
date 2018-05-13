@@ -95,6 +95,11 @@ public class MainServiceImpl implements MainService {
         }
         pb.stepTo(csvWriteQueue.getCountOfWriteRecords());
         pb.stop();
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private Metrics getMetrics() {

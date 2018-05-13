@@ -31,6 +31,12 @@ public class AppProperties {
     @Value("${metrics.to.aggregate.list.path}")
     private String metricsToAggregateListPath;
 
+    @Value("${tmp.folder.path}")
+    private String tmpFolderPath;
+
+    @Value("${tmp.folder.max.size.mb}")
+    private String tmpFolderMaxSizeMb;
+
     private List<String> metricsToAggregateIds = new ArrayList<>();
 
     @PostConstruct
@@ -61,5 +67,13 @@ public class AppProperties {
 
     public List<String> getMetricIds() {
         return metricsToAggregateIds;
+    }
+
+    public String getTmpFolderPath() {
+        return tmpFolderPath;
+    }
+
+    public String getTmpFolderMaxSizeMb() {
+        return tmpFolderMaxSizeMb;
     }
 }

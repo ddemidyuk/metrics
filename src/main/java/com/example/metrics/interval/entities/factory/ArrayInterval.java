@@ -19,7 +19,7 @@ public class ArrayInterval extends AbstractStorableInterval {
     private final long uid;
     private double[] values;
 
-    public boolean isStored;
+    private boolean isStored;
     private Path filePath;
     private int valuesSize;
 
