@@ -14,6 +14,7 @@ import com.example.metrics.wsp.entities.Series;
 import com.example.metrics.wsp.service.Filter;
 import com.example.metrics.wsp.service.Params;
 import com.example.metrics.wsp.service.WspReaderQueue;
+import me.tongfei.progressbar.ProgressBar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -65,14 +66,35 @@ public class MainServiceImpl implements MainService {
         );
         csvWriteQueue.offer(csvRecord);
 
+        ProgressBar pb = new ProgressBar("Writing to .csv file", metrics.getPeriods().getCountOfTimestamp()).start();
+
         for (int timestamp : metrics.getPeriods()) {
             csvRecord = new ArrayList<>();
             csvRecord.add(timestamp);
+            int countOfNotNull = 0;
             for (Metric metric : metrics) {
-                csvRecord.add(metric.getValue(timestamp));
+                Double value = metric.getValue(timestamp);
+                csvRecord.add(value);
+                if (value != null) countOfNotNull++;
             }
-            csvWriteQueue.offer(csvRecord);
+            if (countOfNotNull >= appProperties.getNonNullMetricsPerTimestampThreshold()) {
+                csvWriteQueue.offer(csvRecord);
+                pb.step();
+            }else {
+                pb.maxHint(pb.getMax()-1);
+            }
         }
+
+        while (csvWriteQueue.queueIsNotEmpty()){
+            pb.stepTo(csvWriteQueue.getCountOfWriteRecords());
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        pb.stepTo(csvWriteQueue.getCountOfWriteRecords());
+        pb.stop();
     }
 
     private Metrics getMetrics() {
@@ -83,11 +105,15 @@ public class MainServiceImpl implements MainService {
             Params params = new Params(path, getMetricIdByPath(path), filter);
             wspReaderQueue.offer(params);
         }
+
+        ProgressBar pb = new ProgressBar("Reading .wsp files", pathsOfWspFiles.size()).start();
         while (metrics.getMetrics().size() != pathsOfWspFiles.size()) {
             Series series = wspReaderQueue.take();
             Metric metric = getMetricFromFirstArchiveOfSeries(series);
             metrics.addMetric(metric);
+            pb.step();
         }
+        pb.stop();
         return metrics;
     }
 

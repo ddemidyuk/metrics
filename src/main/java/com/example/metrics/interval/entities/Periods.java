@@ -110,6 +110,14 @@ public class Periods implements Iterable<Integer> {
         return IntersectionType.LESS;
     }
 
+    public int getCountOfTimestamp() {
+        int countOfTimestamp = 0;
+        for (Period period : periods) {
+            countOfTimestamp += (period.getEndTimestamp() - period.getStartTimestamp()) / period.getSecondsPerPoint() + 1;
+        }
+        return countOfTimestamp;
+    }
+
     @Override
     public Iterator<Integer> iterator() {
         return new TimestampIterator();
@@ -131,12 +139,12 @@ public class Periods implements Iterable<Integer> {
 
         public final Integer next() {
             Period period = arrPeriods.get(periodNumber);
-            if(period.getEndTimestamp() <  period.getStartTimestamp() + timestampNumber * period.getSecondsPerPoint()){
+            if (period.getEndTimestamp() < period.getStartTimestamp() + timestampNumber * period.getSecondsPerPoint()) {
                 periodNumber++;
                 timestampNumber = 0;
             }
             period = arrPeriods.get(periodNumber);
-            return period.getStartTimestamp()+ timestampNumber++ * period.getSecondsPerPoint();
+            return period.getStartTimestamp() + timestampNumber++ * period.getSecondsPerPoint();
         }
     }
 

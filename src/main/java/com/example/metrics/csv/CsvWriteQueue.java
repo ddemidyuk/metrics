@@ -21,6 +21,7 @@ public class CsvWriteQueue {
     private Thread writeThread;
     private Path csvPath;
     private AppProperties appProperties;
+    private volatile int countOfWriteRecords;
 
     private Runnable writeTask = () -> {
         createMetricCsv(csvPath);
@@ -28,6 +29,7 @@ public class CsvWriteQueue {
             CSVPrinter csvPrinter = new CSVPrinter(csvFile, CSVFormat.DEFAULT);
             while (true) {
                 csvPrinter.printRecord(queue.take());
+                countOfWriteRecords++;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -57,5 +59,13 @@ public class CsvWriteQueue {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public int getCountOfWriteRecords() {
+        return countOfWriteRecords;
+    }
+
+    public boolean queueIsNotEmpty(){
+        return !queue.isEmpty();
     }
 }
