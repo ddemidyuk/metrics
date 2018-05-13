@@ -1,6 +1,7 @@
 package com.example.metrics.wsp.service;
 
 import com.example.metrics.wsp.entities.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -17,7 +18,10 @@ public class WspReaderImpl implements WspReader {
     private static final int ARCHIVE_INFO_SIZE_IN_BYTES = 12;
     private static final int DATAPOINT_SIZE_IN_BYTES = 12;
 
-    public Series getSeriesByWspFilePath(Params params) {
+    @Autowired
+    private BufferReaderQueue bufferReaderQueue;
+
+    public Series getSeries(Params params) {
         Series series = null;
         try (ReadableByteChannel byteChannel = Files.newByteChannel(params.getMetricPath())) {
             Header header = getHeader(byteChannel, params.getFilter());
@@ -39,8 +43,13 @@ public class WspReaderImpl implements WspReader {
 
     private Archive getArchive(ReadableByteChannel byteChannel, ArchiveInfo archiveInfo, Filter filter) throws IOException {
         int archiveSize = DATAPOINT_SIZE_IN_BYTES * archiveInfo.getPoints();
-        ByteBuffer buf = ByteBuffer.allocate(archiveSize);
-        byteChannel.read(buf);
+        /*ByteBuffer buf = ByteBuffer.allocate(archiveSize);
+        byteChannel.read(buf);*/
+
+        BufferReaderQueue.QueueElement queueElement = new BufferReaderQueue.QueueElement(byteChannel, archiveSize);
+        bufferReaderQueue.offer(queueElement);
+        ByteBuffer buf = queueElement.getBuffer();
+
         buf.rewind();
 
         //todo values of points will be incorrect  cause  points will have filtered
@@ -67,8 +76,13 @@ public class WspReaderImpl implements WspReader {
     }
 
     private Metadata getMetadata(ReadableByteChannel byteChannel) throws IOException {
-        ByteBuffer buf = ByteBuffer.allocate(METADATA_SIZE_IN_BYTES);
-        byteChannel.read(buf);
+       /* ByteBuffer buf = ByteBuffer.allocate(METADATA_SIZE_IN_BYTES);
+        byteChannel.read(buf);*/
+
+        BufferReaderQueue.QueueElement queueElement = new BufferReaderQueue.QueueElement(byteChannel, METADATA_SIZE_IN_BYTES);
+        bufferReaderQueue.offer(queueElement);
+        ByteBuffer buf = queueElement.getBuffer();
+
         buf.rewind();
         return Metadata.Builder.newInstance()
                 .aggregationType(buf.getInt())
@@ -79,8 +93,13 @@ public class WspReaderImpl implements WspReader {
     }
 
     private List<ArchiveInfo> getArchiveInfos(ReadableByteChannel byteChannel, int archiveCount, Filter filter) throws IOException {
-        ByteBuffer buf = ByteBuffer.allocate(ARCHIVE_INFO_SIZE_IN_BYTES * archiveCount);
-        byteChannel.read(buf);
+        /*ByteBuffer buf = ByteBuffer.allocate(ARCHIVE_INFO_SIZE_IN_BYTES * archiveCount);
+        byteChannel.read(buf);*/
+
+        BufferReaderQueue.QueueElement queueElement = new BufferReaderQueue.QueueElement(byteChannel,ARCHIVE_INFO_SIZE_IN_BYTES * archiveCount);
+        bufferReaderQueue.offer(queueElement);
+        ByteBuffer buf = queueElement.getBuffer();
+
         buf.rewind();
         List<ArchiveInfo> archiveInfos = new ArrayList<>();
         for (int i = 1; i <= archiveCount; i++) {

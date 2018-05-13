@@ -20,8 +20,6 @@ public class CsvWriteQueue {
     private BlockingQueue<List<Object>> queue = new LinkedBlockingQueue<>();
     private Thread writeThread;
     private Path csvPath;
-
-    @Autowired
     private AppProperties appProperties;
 
     private Runnable writeTask = () -> {

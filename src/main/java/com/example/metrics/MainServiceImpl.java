@@ -13,7 +13,7 @@ import com.example.metrics.wsp.entities.Datapoint;
 import com.example.metrics.wsp.entities.Series;
 import com.example.metrics.wsp.service.Filter;
 import com.example.metrics.wsp.service.Params;
-import com.example.metrics.wsp.service.WspReader;
+import com.example.metrics.wsp.service.WspReaderQueue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class MainServiceImpl implements MainService {
@@ -35,14 +34,20 @@ public class MainServiceImpl implements MainService {
     private static final String DATABASE_FILE_EXTENSION = ".wsp";
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy hh:mm");
     public static final String TIMESTAMP = "timestamp";
-    private WspReader wspReader;
+    private WspReaderQueue wspReaderQueue;
     private AppProperties appProperties;
     private IntervalFactory intervalFactory;
     private CsvWriteQueue csvWriteQueue;
 
+    private final Filter filter = Filter.Builder.newInstance()
+            .timestampPredicate(Filter.SKIP_ZERO_INT_PREDICATE)
+            .secondsPerPointPredicate(s -> s == appProperties.getSecondsPerPoint())
+            .datapointComparator(Filter.ASC_DATAPOINT_COMPARATOR)
+            .build();
+
     @Autowired
-    public MainServiceImpl(WspReader wspReader, AppProperties appProperties, IntervalFactory intervalFactory, CsvWriteQueue csvWriteQueue) {
-        this.wspReader = wspReader;
+    public MainServiceImpl(WspReaderQueue wspReaderQueue, AppProperties appProperties, IntervalFactory intervalFactory, CsvWriteQueue csvWriteQueue) {
+        this.wspReaderQueue = wspReaderQueue;
         this.appProperties = appProperties;
         this.intervalFactory = intervalFactory;
         this.csvWriteQueue = csvWriteQueue;
@@ -50,9 +55,8 @@ public class MainServiceImpl implements MainService {
 
     public void doIt() {
         Metrics metrics = getMetrics();
-        List<Double> values = new ArrayList<>(metrics.get().size());
 
-        List<Object> csvRecord = new ArrayList<>(metrics.get().size() + 1);
+        List<Object> csvRecord = new ArrayList<>();
         csvRecord.add(TIMESTAMP);
         csvRecord.addAll(getPathsOfWspFiles()
                 .stream()
@@ -62,24 +66,28 @@ public class MainServiceImpl implements MainService {
         csvWriteQueue.offer(csvRecord);
 
         for (int timestamp : metrics.getPeriods()) {
-            for (Metric metric : metrics) {
-                values.add(metric.getValue(timestamp));
-            }
-            csvRecord = new ArrayList<>(metrics.get().size() + 1);
+            csvRecord = new ArrayList<>();
             csvRecord.add(timestamp);
-            csvRecord.addAll(values);
+            for (Metric metric : metrics) {
+                csvRecord.add(metric.getValue(timestamp));
+            }
             csvWriteQueue.offer(csvRecord);
-            values.clear();
         }
-
     }
 
     private Metrics getMetrics() {
         Metrics metrics = new Metrics();
-        getSeriesByByMetricsIds(getPathsOfWspFiles(), getFilter())
-                .map(this::getMetricFromFirstArchiveOfSeries)
-                .forEach(metric -> metrics.addMetric(metric));
+        List<Path> pathsOfWspFiles = getPathsOfWspFiles();
 
+        for (Path path : pathsOfWspFiles) {
+            Params params = new Params(path, getMetricIdByPath(path), filter);
+            wspReaderQueue.offer(params);
+        }
+        while (metrics.getMetrics().size() != pathsOfWspFiles.size()) {
+            Series series = wspReaderQueue.take();
+            Metric metric = getMetricFromFirstArchiveOfSeries(series);
+            metrics.addMetric(metric);
+        }
         return metrics;
     }
 
@@ -106,26 +114,10 @@ public class MainServiceImpl implements MainService {
         return metricsIds;
     }
 
-
-    private Filter getFilter() {
-        return Filter.Builder.newInstance()
-                .timestampPredicate(Filter.SKIP_ZERO_INT_PREDICATE)
-                .secondsPerPointPredicate(s -> s == appProperties.getSecondsPerPoint())
-                .datapointComparator(Filter.ASC_DATAPOINT_COMPARATOR)
-                .build();
-    }
-
-    private Stream<Series> getSeriesByByMetricsIds(List<Path> metricPaths, Filter filter) {
-        return metricPaths.stream()
-                .map(metricPath -> new Params(metricPath, getMetricIdByPath(metricPath), filter))
-                .map(wspReader::getSeriesByWspFilePath);
-    }
-
     private String getMetricIdByPath(Path path) {
         int rootPathLength = appProperties.getInputDataRootPath().length();
         String strPath = path.toString();
-        return strPath.substring(rootPathLength, strPath.length() - DATABASE_FILE_EXTENSION.length())
-                ;
+        return strPath.substring(rootPathLength, strPath.length() - DATABASE_FILE_EXTENSION.length());
     }
 
     private Path getMetricPathById(String metricId) {
@@ -134,7 +126,6 @@ public class MainServiceImpl implements MainService {
     }
 
     private double[] getValueByPeriod(String metricId, Period period) {
-        Filter filter = getFilter();
         filter.setTimestampPredicate(
                 filter.getTimestampPredicate()
                         .and(i -> i >= period.getStartTimestamp())
@@ -142,7 +133,8 @@ public class MainServiceImpl implements MainService {
         );
 
         Params params = new Params(getMetricPathById(metricId), metricId, filter);
-        Series series = wspReader.getSeriesByWspFilePath(params);
+        wspReaderQueue.offer(params);
+        Series series = wspReaderQueue.take();
         Archive archive = series.getArchives().get(0);
         Set<Datapoint> datapoints = archive.getDatapoints();
         double[] values = new double[datapoints.size()];
